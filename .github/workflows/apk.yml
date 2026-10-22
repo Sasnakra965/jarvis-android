@@ -1,0 +1,57 @@
+# Compile l'appli Jarvis et publie l'APK signé dans une Release GitHub.
+# Lien direct, toujours vers la dernière version :
+#   https://github.com/<compte>/jarvis-android/releases/latest/download/jarvis.apk
+name: APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Tests
+        run: gradle testReleaseUnitTest --no-daemon
+
+      - name: Clé de signature
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+        run: echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/jarvis.jks"
+
+      - name: Compilation
+        env:
+          KEYSTORE_FILE: ${{ runner.temp }}/jarvis.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: 1.${{ github.run_number }}
+        run: |
+          gradle assembleRelease --no-daemon
+          cp app/build/outputs/apk/release/app-release.apk jarvis.apk
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.${{ github.run_number }}
+          name: Jarvis 1.${{ github.run_number }}
+          body: |
+            Sur le téléphone : ouvrir ce lien et installer **jarvis.apk**.
+            ${{ github.event.head_commit.message }}
+          files: jarvis.apk
+          make_latest: true
