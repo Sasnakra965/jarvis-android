@@ -7,6 +7,9 @@ via [ntfy](https://ntfy.sh), sans MacroDroid ni Chrome :
 - notifications immédiates, même écran éteint ;
 - vrais réveils (`AlarmManager.setAlarmClock`) : écran plein avec sonnerie, boutons **Arrêter** et **Snooze 10 min**, annulation à distance ;
 - écran unique : serveur, sujet, autorisations, tests, réveils programmés, historique.
+- **partage vers la télé** : dans Google Photos (ou la galerie), « Partager › Jarvis (télé) » envoie une photo,
+  plusieurs photos (diaporama, vitesse au choix) ou une vidéo sur l'écran choisi. L'appli se lie une fois à Jarvis
+  avec « Lier à Jarvis » en scannant le QR code de Jarvis › Téléphone (elle reçoit son propre jeton d'appareil).
 
 ## Installer
 
@@ -38,6 +41,6 @@ Le sujet fait office de mot de passe : quiconque le connaît peut envoyer des me
 
 ## Développer
 
-Kotlin, aucune dépendance (API Android seules). `gradle assembleRelease` (Gradle 8.11, JDK 17, SDK 35).
+Kotlin, API Android seules, plus le lecteur de QR code des services Google (`play-services-code-scanner`). `gradle assembleRelease` (Gradle 8.11, JDK 17, SDK 35).
 Chaque push sur `main` compile, teste, signe et publie une Release (`.github/workflows/apk.yml`) ;
 secrets du dépôt : `KEYSTORE_B64`, `KEYSTORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS`.

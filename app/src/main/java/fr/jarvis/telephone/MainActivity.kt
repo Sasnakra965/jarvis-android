@@ -20,6 +20,9 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -34,6 +37,7 @@ class MainActivity : Activity() {
     private lateinit var autorisations: LinearLayout
     private lateinit var reveils: TextView
     private lateinit var historique: TextView
+    private lateinit var lienJarvis: TextView
     private val ui = Handler(Looper.getMainLooper())
     private val rafraichir = object : Runnable {
         override fun run() {
@@ -68,6 +72,11 @@ class MainActivity : Activity() {
             ListenerService.redemarrer(this)
             Toast.makeText(this, "Enregistré", Toast.LENGTH_SHORT).show()
         })
+
+        col.addView(titre("Télé (partage de photos)"))
+        lienJarvis = TextView(this).apply { textSize = 15f }
+        col.addView(lienJarvis)
+        col.addView(bouton("Lier à Jarvis (scanner le QR code)") { scannerQr() })
 
         col.addView(titre("Autorisations"))
         autorisations = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -145,6 +154,10 @@ class MainActivity : Activity() {
 
     private fun majEtat() {
         etat.text = if (Prefs.sujet(this).isEmpty()) "Jarvis : renseigne le sujet ci-dessous" else "Jarvis : ${ListenerService.etat}"
+        lienJarvis.text = if (Prefs.jetonJarvis(this).isEmpty())
+            "Pas encore liée. Sur le PC : Jarvis › Téléphone › QR code, puis touche le bouton ci-dessous.\n" +
+                "Ensuite, dans Google Photos : Partager › Jarvis (télé)."
+        else "✔ Liée à ${Uri.parse(Prefs.jarvis(this)).host}. Dans Google Photos : Partager › Jarvis (télé)."
         val r = Prefs.reveils(this)
         reveils.text = if (r.isEmpty()) "Aucun" else r.joinToString("\n") { "• ${Alarms.heure(it.quand)} · ${it.libelle}" }
         val f = SimpleDateFormat("dd/MM HH:mm", Locale.FRANCE)
@@ -186,6 +199,23 @@ class MainActivity : Activity() {
                 startActivity(Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:$packageName")))
             }
         }
+    }
+
+    /** QR code de Jarvis (Jarvis › Téléphone, sur le PC) : lu par les services Google, sans autorisation caméra. */
+    private fun scannerQr() {
+        val options = GmsBarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build()
+        GmsBarcodeScanning.getClient(this, options).startScan()
+            .addOnSuccessListener { code ->
+                val lien = code.rawValue ?: ""
+                Thread {
+                    val r = runCatching { Jarvis.lier(this, lien) }
+                    ui.post {
+                        Toast.makeText(this, r.exceptionOrNull()?.message ?: "Liée à Jarvis 👌", Toast.LENGTH_LONG).show()
+                        majEtat()
+                    }
+                }.start()
+            }
+            .addOnFailureListener { Toast.makeText(this, "Lecture du QR code impossible : ${it.message}", Toast.LENGTH_LONG).show() }
     }
 
     /** Envoie un message sur le sujet : teste tout le trajet (serveur → téléphone). */

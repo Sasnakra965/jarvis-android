@@ -23,6 +23,20 @@ object Prefs {
             .apply()
     }
 
+    // --- Lien avec Jarvis (partage vers la télé) ---
+
+    /** Adresse de Jarvis (ex. https://jarvis.tailXXXX.ts.net), vide si l'appli n'est pas liée. */
+    fun jarvis(ctx: Context): String = p(ctx).getString("jarvis_url", "")!!
+    fun jetonJarvis(ctx: Context): String = p(ctx).getString("jarvis_jeton", "")!!
+
+    fun lierJarvis(ctx: Context, url: String, jeton: String) =
+        p(ctx).edit().putString("jarvis_url", url.trimEnd('/')).putString("jarvis_jeton", jeton).apply()
+
+    fun ecran(ctx: Context): String = p(ctx).getString("ecran", "")!!
+    fun secondes(ctx: Context): Int = p(ctx).getInt("secondes", 5)
+    fun garderChoix(ctx: Context, ecran: String, secondes: Int) =
+        p(ctx).edit().putString("ecran", ecran).putInt("secondes", secondes).apply()
+
     // --- Messages déjà traités (le serveur peut renvoyer les messages manqués) ---
 
     fun dernierId(ctx: Context): String? = p(ctx).getString("dernier_id", null)

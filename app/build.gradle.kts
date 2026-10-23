@@ -46,6 +46,8 @@ android {
 }
 
 dependencies {
+    // Lecture du QR code de Jarvis (« Lier à Jarvis ») par les services Google : sans autorisation caméra.
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
     testImplementation("junit:junit:4.13.2")
     // org.json n'existe qu'en « bouchon » dans android.jar : la vraie version pour les tests.
     testImplementation("org.json:json:20240303")

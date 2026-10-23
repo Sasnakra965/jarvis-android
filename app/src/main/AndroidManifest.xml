@@ -35,6 +35,28 @@
             </intent-filter>
         </activity>
 
+        <!-- « Partager › Jarvis » depuis Google Photos ou la galerie : affiche sur la télé. -->
+        <activity
+            android:name=".PartageActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:label="Jarvis (télé)"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Material.Light.Dialog.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".AlarmActivity"
             android:excludeFromRecents="true"
@@ -54,6 +76,11 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Connexion permanente au serveur de notifications de Jarvis (réveils et alertes)" />
         </service>
+
+        <!-- Module de lecture de QR code installé avec l'appli (sinon au premier usage). -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="barcode_ui" />
 
         <receiver
             android:name=".AlarmReceiver"
