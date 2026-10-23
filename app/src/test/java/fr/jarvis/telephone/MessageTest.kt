@@ -22,6 +22,14 @@ class MessageTest {
         assertEquals(Message.Notif("Départ", "Go", 3, "https://waze.com/ul?q=x"), m)
     }
 
+    @Test fun briefing() {
+        val m = Message.lire(ev("""{"type":"briefing","titre":"☀️ Briefing","message":"☀️ Bonjour boss","parole":"Bonjour boss","url":"https://j/kanban","attendre_reveil":true}"""))
+        assertEquals(Message.Briefing("☀️ Briefing", "☀️ Bonjour boss", "Bonjour boss", "https://j/kanban", true), m)
+        val sansParole = Message.lire(ev("""{"type":"briefing","titre":"B","message":"Salut"}""")) as Message.Briefing
+        assertEquals("Salut", sansParole.parole)
+        assertEquals(false, sansParole.attendreReveil)
+    }
+
     @Test fun texteSimple() {
         assertEquals(Message.Notif("Test", "bonjour", 3), Message.lire(ev("bonjour", "Test")))
         assertEquals(Message.Notif("Jarvis", "{pas du json", 3), Message.lire(ev("{pas du json")))

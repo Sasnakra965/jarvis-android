@@ -74,6 +74,7 @@ object Alarms {
 
     fun sonner(ctx: Context, id: String, libelle: String) {
         Prefs.oublierReveil(ctx, id)
+        Prefs.reveilEnCours(ctx, true)
         Prefs.ajouterHistorique(ctx, "⏰ Réveil : $libelle")
         val ecran = PendingIntent.getActivity(
             ctx, 1,
@@ -110,6 +111,7 @@ object Alarms {
         )
 
     fun arreter(ctx: Context) {
+        Prefs.reveilEnCours(ctx, false)
         Notifs.nm(ctx).cancel(Notifs.ID_REVEIL)
         ctx.sendBroadcast(Intent(AlarmActivity.FERMER).setPackage(ctx.packageName))
     }
@@ -128,7 +130,10 @@ class AlarmReceiver : BroadcastReceiver() {
         val libelle = intent.getStringExtra(Alarms.EXTRA_LIBELLE) ?: "Réveil"
         when (intent.action) {
             Alarms.SONNER -> Alarms.sonner(ctx, id, libelle)
-            Alarms.ARRETER -> Alarms.arreter(ctx)
+            Alarms.ARRETER -> {
+                Alarms.arreter(ctx)
+                Briefings.apresReveil(ctx)
+            }
             Alarms.SNOOZE -> Alarms.snooze(ctx, id, libelle)
         }
     }

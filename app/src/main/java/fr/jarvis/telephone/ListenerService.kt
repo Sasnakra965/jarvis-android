@@ -135,6 +135,7 @@ class ListenerService : Service() {
                     Prefs.ajouterHistorique(this, "⏰ Réveil ignoré (heure passée) : ${msg.libelle}")
                 }
             }
+            is Message.Briefing -> Briefings.recevoir(this, msg)
             is Message.AnnulerReveil -> {
                 val n = Alarms.annuler(this, msg.id)
                 val quoi = if (n == 0) "aucun réveil à annuler" else "$n réveil(s) annulé(s)"

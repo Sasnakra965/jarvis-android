@@ -17,6 +17,11 @@
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
+    <!-- « Plus de détails » du briefing : ouvrir l'appli Claude si elle est installée. -->
+    <queries>
+        <package android:name="com.anthropic.claude" />
+    </queries>
+
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
@@ -85,6 +90,19 @@
         <receiver
             android:name=".AlarmReceiver"
             android:exported="false" />
+
+        <!-- Briefing : boutons Relire / Stop de la notification. -->
+        <receiver
+            android:name=".BriefingReceiver"
+            android:exported="false" />
+
+        <activity
+            android:name=".DetailsActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <receiver
             android:name=".BootReceiver"

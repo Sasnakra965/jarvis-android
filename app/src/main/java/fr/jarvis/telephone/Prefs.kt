@@ -74,6 +74,18 @@ object Prefs {
 
     fun effacerHistorique(ctx: Context) = p(ctx).edit().remove("historique").apply()
 
+    // --- Briefing du matin (texte à relire) et réveil en train de sonner ---
+
+    fun garderBriefing(ctx: Context, parole: String) = p(ctx).edit().putString("briefing", parole).apply()
+    fun dernierBriefing(ctx: Context): String = p(ctx).getString("briefing", "")!!
+
+    /** Briefing reçu pendant (ou juste avant) un réveil : à lire quand on l'arrête. */
+    fun briefingALire(ctx: Context): Boolean = p(ctx).getBoolean("briefing_a_lire", false)
+    fun briefingALire(ctx: Context, oui: Boolean) = p(ctx).edit().putBoolean("briefing_a_lire", oui).apply()
+
+    fun reveilEnCours(ctx: Context): Boolean = p(ctx).getBoolean("reveil_en_cours", false)
+    fun reveilEnCours(ctx: Context, oui: Boolean) = p(ctx).edit().putBoolean("reveil_en_cours", oui).apply()
+
     // --- Réveils programmés (pour les reprogrammer après un redémarrage) ---
 
     data class ReveilProgramme(val id: String, val quand: Long, val libelle: String)

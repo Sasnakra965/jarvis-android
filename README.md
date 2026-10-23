@@ -5,6 +5,7 @@ via [ntfy](https://ntfy.sh), sans MacroDroid ni Chrome :
 
 - connexion permanente (service au premier plan), démarre avec le téléphone, se reconnecte seule et récupère les messages manqués ;
 - notifications immédiates, même écran éteint ;
+- **briefing du matin lu à voix haute** (synthèse vocale d'Android), relu après l'arrêt du réveil ;
 - vrais réveils (`AlarmManager.setAlarmClock`) : écran plein avec sonnerie, boutons **Arrêter** et **Snooze 10 min**, annulation à distance ;
 - écran unique : serveur, sujet, autorisations, tests, réveils programmés, historique.
 - **partage vers la télé** : dans Google Photos (ou la galerie), « Partager › Jarvis (télé) » envoie une photo,
@@ -26,6 +27,7 @@ Corps d'un message publié sur le sujet ntfy (`POST https://ntfy.sh/<sujet>`), e
 | `notif` | `titre`, `message`, `priorite` : `basse` \| `normale` \| `haute` \| `urgente`, `url` (facultatif) | notification (haute/urgente : canal « Alertes importantes ») ; toucher ouvre `url` |
 | `reveil` | `id`, `timestamp` (secondes) **ou** `heure` + `minute`, `libelle` | programme une alarme ; même `id` = remplace |
 | `annuler_reveil` | `id` (facultatif) | annule ce réveil, ou tous sans `id` |
+| `briefing` | `titre`, `message`, `parole` (texte lu), `url` (facultatif), `attendre_reveil` (facultatif) | notification lue à voix haute (voix française, écran verrouillé, haut-parleur ou écouteurs) ; boutons **Relire**, **Stop**, **Plus de détails** (ouvre l'appli Claude) ; toucher ouvre `url` (le Kanban). Pendant un réveil, ou avec `attendre_reveil`, la lecture attend l'arrêt de l'alarme (20 min au plus) |
 
 ```json
 {"type":"notif","titre":"Jarvis","message":"Sauvegarde ratée","priorite":"haute"}

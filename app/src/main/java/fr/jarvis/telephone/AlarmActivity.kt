@@ -63,7 +63,10 @@ class AlarmActivity : Activity() {
         }
         colonne.addView(texte(Alarms.heure(System.currentTimeMillis()), 64f))
         colonne.addView(texte(libelle, 26f))
-        colonne.addView(bouton("Arrêter", "#C62828") { Alarms.arreter(this) })
+        colonne.addView(bouton("Arrêter", "#C62828") {
+            Alarms.arreter(this)
+            Briefings.apresReveil(this)
+        })
         colonne.addView(bouton("Snooze ${Alarms.SNOOZE_MINUTES} min", "#1565C0") { Alarms.snooze(this, id, libelle) })
         setContentView(colonne)
 

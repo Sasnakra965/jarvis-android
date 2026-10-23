@@ -19,6 +19,10 @@ import javax.crypto.spec.SecretKeySpec
  *
  *   {"type":"annuler_reveil", "id":"r-123"}      sans id : annule tous les réveils
  *
+ *   {"type":"briefing", "titre":"☀️ Briefing", "message":"…", "parole":"…", "url":"https://…/kanban",
+ *    "attendre_reveil":false}
+ *        notification lue à voix haute (parole, sinon message) ; attendre_reveil : lire à l'arrêt du réveil
+ *
  * Un message qui n'est pas du JSON (ex. envoyé depuis la page ntfy) s'affiche comme une notification.
  *
  * Chiffré (appli liée à Jarvis) : {"chiffre": base64(iv 12 octets | texte | tag 16 octets)}, AES-256-GCM,
@@ -28,6 +32,13 @@ sealed class Message {
     data class Notif(val titre: String, val texte: String, val priorite: Int, val url: String? = null) : Message()
     data class Reveil(val id: String, val quand: Long, val libelle: String) : Message()
     data class AnnulerReveil(val id: String?) : Message()
+    data class Briefing(
+        val titre: String,
+        val texte: String,
+        val parole: String,
+        val url: String? = null,
+        val attendreReveil: Boolean = false,
+    ) : Message()
 
     companion object {
         const val NORMALE = 3
@@ -72,6 +83,13 @@ sealed class Message {
                     )
                 }
                 "annuler_reveil" -> AnnulerReveil(json.optString("id").ifEmpty { null })
+                "briefing" -> Briefing(
+                    json.optString("titre").ifEmpty { "Briefing" },
+                    json.optString("message"),
+                    json.optString("parole").ifEmpty { json.optString("message") },
+                    json.optString("url").ifEmpty { null },
+                    json.optBoolean("attendre_reveil", false),
+                )
                 else -> Notif(
                     json.optString("titre").ifEmpty { ev.optString("title").ifEmpty { "Jarvis" } },
                     json.optString("message"),
