@@ -91,6 +91,11 @@
             android:name=".AlarmReceiver"
             android:exported="false" />
 
+        <!-- Questions à boutons (nouvel expéditeur de mail…) : réponse envoyée à Jarvis. -->
+        <receiver
+            android:name=".ChoixReceiver"
+            android:exported="false" />
+
         <!-- Briefing : boutons Relire / Stop de la notification. -->
         <receiver
             android:name=".BriefingReceiver"

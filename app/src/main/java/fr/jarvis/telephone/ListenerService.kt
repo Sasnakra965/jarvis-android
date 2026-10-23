@@ -136,6 +136,10 @@ class ListenerService : Service() {
                 }
             }
             is Message.Briefing -> Briefings.recevoir(this, msg)
+            is Message.Choix -> {
+                Choix.afficher(this, msg)
+                Prefs.ajouterHistorique(this, "❓ ${msg.titre} : ${msg.texte}")
+            }
             is Message.AnnulerReveil -> {
                 val n = Alarms.annuler(this, msg.id)
                 val quoi = if (n == 0) "aucun réveil à annuler" else "$n réveil(s) annulé(s)"

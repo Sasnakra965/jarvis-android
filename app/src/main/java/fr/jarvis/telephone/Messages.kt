@@ -23,6 +23,9 @@ import javax.crypto.spec.SecretKeySpec
  *    "attendre_reveil":false}
  *        notification lue à voix haute (parole, sinon message) ; attendre_reveil : lire à l'arrêt du réveil
  *
+ *   {"type":"choix", "titre":"…", "message":"…", "url":"https://…", "choix":[{"libelle":"Spam","url":"https://…"}]}
+ *        notification à boutons (3 au plus) : chaque bouton envoie un POST à son url ; toucher ouvre url
+ *
  * Un message qui n'est pas du JSON (ex. envoyé depuis la page ntfy) s'affiche comme une notification.
  *
  * Chiffré (appli liée à Jarvis) : {"chiffre": base64(iv 12 octets | texte | tag 16 octets)}, AES-256-GCM,
@@ -32,6 +35,7 @@ sealed class Message {
     data class Notif(val titre: String, val texte: String, val priorite: Int, val url: String? = null) : Message()
     data class Reveil(val id: String, val quand: Long, val libelle: String) : Message()
     data class AnnulerReveil(val id: String?) : Message()
+    data class Choix(val titre: String, val texte: String, val url: String?, val boutons: List<Pair<String, String>>) : Message()
     data class Briefing(
         val titre: String,
         val texte: String,
@@ -83,6 +87,19 @@ sealed class Message {
                     )
                 }
                 "annuler_reveil" -> AnnulerReveil(json.optString("id").ifEmpty { null })
+                "choix" -> {
+                    val c = json.optJSONArray("choix")
+                    Choix(
+                        json.optString("titre").ifEmpty { "Jarvis" },
+                        json.optString("message"),
+                        json.optString("url").ifEmpty { null },
+                        (0 until (c?.length() ?: 0)).mapNotNull { i ->
+                            val b = c!!.optJSONObject(i) ?: return@mapNotNull null
+                            val u = b.optString("url")
+                            if (u.startsWith("https://") || u.startsWith("http://")) b.optString("libelle", "?") to u else null
+                        }.take(3),
+                    )
+                }
                 "briefing" -> Briefing(
                     json.optString("titre").ifEmpty { "Briefing" },
                     json.optString("message"),

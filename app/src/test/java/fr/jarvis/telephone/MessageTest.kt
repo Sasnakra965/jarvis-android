@@ -30,6 +30,13 @@ class MessageTest {
         assertEquals(false, sansParole.attendreReveil)
     }
 
+    @Test fun choix() {
+        val m = Message.lire(ev("""{"type":"choix","titre":"Nouvel expéditeur","message":"Jean","url":"https://j/mail/x","choix":[{"libelle":"Spam","url":"https://j/api/mails/choix?j=x&c=spam"},{"libelle":"Pas important","url":"https://j/a"},{"libelle":"Important","url":"https://j/b"},{"libelle":"Trop","url":"https://j/c"},{"libelle":"Bizarre","url":"javascript:x"}]}""")) as Message.Choix
+        assertEquals("Nouvel expéditeur", m.titre)
+        assertEquals(3, m.boutons.size)
+        assertEquals("Spam" to "https://j/api/mails/choix?j=x&c=spam", m.boutons[0])
+    }
+
     @Test fun texteSimple() {
         assertEquals(Message.Notif("Test", "bonjour", 3), Message.lire(ev("bonjour", "Test")))
         assertEquals(Message.Notif("Jarvis", "{pas du json", 3), Message.lire(ev("{pas du json")))
