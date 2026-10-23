@@ -51,4 +51,18 @@ class MessageTest {
     @Test fun keepaliveIgnore() {
         assertNull(Message.lire(JSONObject().put("event", "keepalive").put("id", "k")))
     }
+
+    // Vecteur produit par Jarvis (Node, lib/ntfy.ts) : clé 32 × 0x07, iv 12 × 0x03.
+    private val cle = "BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc"
+    private val chiffre = "AwMDAwMDAwMDAwMDXtzXeipNfHhYLiwogjHdIM9IiZvG8LZKDZpEGJOEMsyTi19P/ojWIantaT+vjKIGbGFB5EoiHUYaQAzegB8qjZv2ahZsPQXgPaZsxg=="
+
+    @Test fun messageChiffre() {
+        val m = Message.lire(ev("""{"chiffre":"$chiffre"}"""), cle)
+        assertEquals(Message.Notif("Départ", "BECKER à 16h", Message.NORMALE), m)
+    }
+
+    @Test fun messageChiffreSansCle() {
+        val m = Message.lire(ev("""{"chiffre":"$chiffre"}"""), "") as Message.Notif
+        assertTrue(m.texte.contains("Lier à Jarvis"))
+    }
 }

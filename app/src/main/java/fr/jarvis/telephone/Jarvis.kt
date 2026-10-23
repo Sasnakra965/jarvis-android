@@ -34,6 +34,22 @@ object Jarvis {
         val corps = JSONObject().put("token", token).put("nom", Build.MODEL).toString().toByteArray()
         val r = appel("$url/api/pair/app", "POST", null, "application/json", corps.size.toLong()) { it.write(corps) }
         Prefs.lierJarvis(ctx, url, r.getString("jeton"))
+        runCatching { recupererCle(ctx) } // réessayé à la prochaine ouverture de l'appli
+    }
+
+    /**
+     * Clé des messages chiffrés et canal à écouter, donnés par Jarvis (à partir de là, il chiffre tout).
+     * À appeler hors du fil principal, une fois l'appli liée.
+     */
+    fun recupererCle(ctx: Context) {
+        val r = appel("${Prefs.jarvis(ctx)}/api/ntfy/cle", "GET", Prefs.jetonJarvis(ctx))
+        Prefs.garderCleNtfy(ctx, r.getString("cle"))
+        val serveur = r.getString("serveur")
+        val sujet = r.getString("sujet")
+        if (serveur != Prefs.serveur(ctx) || sujet != Prefs.sujet(ctx)) {
+            Prefs.enregistrer(ctx, serveur, sujet)
+            ListenerService.redemarrer(ctx)
+        }
     }
 
     fun ecrans(ctx: Context): List<String> {

@@ -120,6 +120,10 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         majAutorisations()
+        // Appli liée avant le chiffrement des messages : on récupère la clé une fois.
+        if (Prefs.jetonJarvis(this).isNotEmpty() && Prefs.cleNtfy(this).isEmpty()) {
+            Thread { runCatching { Jarvis.recupererCle(this) } }.start()
+        }
         ui.post(rafraichir)
     }
 

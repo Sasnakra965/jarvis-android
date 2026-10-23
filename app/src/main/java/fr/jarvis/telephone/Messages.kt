@@ -1,7 +1,11 @@
 package fr.jarvis.telephone
 
 import org.json.JSONObject
+import java.util.Base64
 import java.util.Calendar
+import javax.crypto.Cipher
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 /*
  * Format des messages (corps du message ntfy, en JSON) :
@@ -16,6 +20,9 @@ import java.util.Calendar
  *   {"type":"annuler_reveil", "id":"r-123"}      sans id : annule tous les réveils
  *
  * Un message qui n'est pas du JSON (ex. envoyé depuis la page ntfy) s'affiche comme une notification.
+ *
+ * Chiffré (appli liée à Jarvis) : {"chiffre": base64(iv 12 octets | texte | tag 16 octets)}, AES-256-GCM,
+ * avec la clé récupérée auprès de Jarvis ; le serveur ntfy ne voit que ce charabia.
  */
 sealed class Message {
     data class Notif(val titre: String, val texte: String, val priorite: Int, val url: String? = null) : Message()
@@ -32,12 +39,25 @@ sealed class Message {
             else -> NORMALE
         }
 
+        /** Texte en clair d'un message chiffré, null si la clé manque ou ne convient pas. */
+        fun dechiffrer(b64: String, cle: String): String? = runCatching {
+            val b = Base64.getDecoder().decode(b64)
+            val c = Cipher.getInstance("AES/GCM/NoPadding")
+            c.init(Cipher.DECRYPT_MODE, SecretKeySpec(Base64.getUrlDecoder().decode(cle), "AES"), GCMParameterSpec(128, b, 0, 12))
+            String(c.doFinal(b, 12, b.size - 12), Charsets.UTF_8)
+        }.getOrNull()
+
         /** Lit un événement du flux JSON de ntfy ; null si ce n'est pas un message. */
-        fun lire(ev: JSONObject): Message? {
+        fun lire(ev: JSONObject, cle: String = ""): Message? {
             if (ev.optString("event") != "message") return null
-            val corps = ev.optString("message", "")
+            var corps = ev.optString("message", "")
             val envoi = ev.optLong("time", System.currentTimeMillis() / 1000) * 1000
-            val json = corps.trim().takeIf { it.startsWith("{") }?.let { runCatching { JSONObject(it) }.getOrNull() }
+            var json = corps.trim().takeIf { it.startsWith("{") }?.let { runCatching { JSONObject(it) }.getOrNull() }
+            if (json != null && json.has("chiffre")) {
+                corps = dechiffrer(json.getString("chiffre"), cle)
+                    ?: return Notif("Jarvis", "Message chiffré illisible : ouvre l'appli Jarvis et touche « Lier à Jarvis ».", NORMALE)
+                json = runCatching { JSONObject(corps) }.getOrNull()
+            }
             if (json == null || !json.has("type")) {
                 return Notif(ev.optString("title").ifEmpty { "Jarvis" }, corps, ev.optInt("priority", NORMALE))
             }

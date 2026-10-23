@@ -39,6 +39,10 @@ s'affiche tel quel comme notification (titre et priorité ntfy).
 
 Le sujet fait office de mot de passe : quiconque le connaît peut envoyer des messages. Choisir un nom long et aléatoire.
 
+**Chiffrement de bout en bout** : une fois l'appli liée à Jarvis (« Lier à Jarvis »), elle récupère une clé
+(`GET /api/ntfy/cle`, avec le serveur et le sujet) et Jarvis chiffre chaque message : corps
+`{"chiffre": base64(iv 12 octets | texte | tag 16 octets)}`, AES-256-GCM. ntfy.sh ne voit plus le contenu.
+
 ## Développer
 
 Kotlin, API Android seules, plus le lecteur de QR code des services Google (`play-services-code-scanner`). `gradle assembleRelease` (Gradle 8.11, JDK 17, SDK 35).

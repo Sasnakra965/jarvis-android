@@ -119,7 +119,7 @@ class ListenerService : Service() {
     }
 
     private fun traiter(ev: JSONObject) {
-        val msg = Message.lire(ev) ?: return
+        val msg = Message.lire(ev, Prefs.cleNtfy(this)) ?: return
         if (!Prefs.nouveauMessage(this, ev.optString("id"))) return
         when (msg) {
             is Message.Notif -> {

@@ -32,6 +32,10 @@ object Prefs {
     fun lierJarvis(ctx: Context, url: String, jeton: String) =
         p(ctx).edit().putString("jarvis_url", url.trimEnd('/')).putString("jarvis_jeton", jeton).apply()
 
+    /** Clé de déchiffrement des messages de Jarvis (base64url), vide tant qu'elle n'est pas récupérée. */
+    fun cleNtfy(ctx: Context): String = p(ctx).getString("ntfy_cle", "")!!
+    fun garderCleNtfy(ctx: Context, cle: String) = p(ctx).edit().putString("ntfy_cle", cle).apply()
+
     fun ecran(ctx: Context): String = p(ctx).getString("ecran", "")!!
     fun secondes(ctx: Context): Int = p(ctx).getInt("secondes", 5)
     fun garderChoix(ctx: Context, ecran: String, secondes: Int) =
