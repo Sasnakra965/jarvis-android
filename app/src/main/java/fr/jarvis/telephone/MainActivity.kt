@@ -86,6 +86,13 @@ class MainActivity : Activity() {
             isChecked = Prefs.lectureVocale(this@MainActivity)
             setOnCheckedChangeListener { _, oui -> Prefs.lectureVocale(this@MainActivity, oui) }
         })
+        col.addView(bouton("Tester le briefing maintenant") {
+            Toast.makeText(this, "Jarvis prépare ton briefing…", Toast.LENGTH_SHORT).show()
+            Thread {
+                val erreur = runCatching { Jarvis.testerBriefing(this) }.exceptionOrNull()?.message
+                runOnUiThread { if (erreur != null) Toast.makeText(this, erreur, Toast.LENGTH_LONG).show() }
+            }.start()
+        })
         col.addView(bouton("Tester la lecture vocale") {
             Lecteur.lire(this, "Test de Jarvis. C'est l'heure de partir pour ton rendez-vous à Aubagne, 25 minutes de route.", alerte = true)
         })

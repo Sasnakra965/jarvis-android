@@ -11,8 +11,10 @@ import android.os.Handler
 import android.os.Looper
 
 /**
- * Briefing du matin : notification (toucher → Kanban) avec Relire / Stop / Plus de détails, lu à voix haute.
- * Si un réveil sonne (ou va sonner : attendre_reveil), la lecture attend qu'on arrête l'alarme.
+ * Briefing du matin : lu à voix haute comme une alerte importante (volume au max, musique en pause), Kanban
+ * affiché en plein écran (même téléphone verrouillé), notification avec Relire / Stop / Plus de détails.
+ * Si un réveil sonne (ou va sonner : attendre_reveil), la lecture attend qu'on arrête l'alarme ; couper le
+ * réveil demande aussi à Jarvis le briefing du jour s'il n'est pas encore parti.
  */
 object Briefings {
     const val RELIRE = "fr.jarvis.telephone.RELIRE"
@@ -23,25 +25,32 @@ object Briefings {
 
     fun recevoir(ctx: Context, b: Message.Briefing) {
         Prefs.garderBriefing(ctx, b.parole)
+        b.url?.let { Prefs.garderKanban(ctx, it) }
         afficher(ctx, b)
+        KanbanActivity.ouvrir(ctx)
         Prefs.ajouterHistorique(ctx, "☀️ ${b.titre} : ${b.texte}")
         if (b.attendreReveil || Prefs.reveilEnCours(ctx)) {
             Prefs.briefingALire(ctx, true)
             // Réveil annulé ou jamais arrêté : on lit quand même au bout de 20 min.
             ui.postDelayed({ if (Prefs.briefingALire(ctx) && !Prefs.reveilEnCours(ctx)) lireEnAttente(ctx) }, ATTENTE_MAX_MS)
         } else {
-            Lecteur.lire(ctx, b.parole)
+            Lecteur.lire(ctx, b.parole, alerte = true)
         }
     }
 
     /** Appelé quand on arrête le réveil (pas au snooze). */
     fun apresReveil(ctx: Context) {
-        if (Prefs.briefingALire(ctx)) lireEnAttente(ctx)
+        if (Prefs.briefingALire(ctx)) {
+            lireEnAttente(ctx)
+            KanbanActivity.ouvrir(ctx)
+        }
+        // Le premier des deux : l'heure prévue ou l'arrêt du réveil (Jarvis n'en envoie qu'un par jour).
+        Thread { runCatching { Jarvis.reveilCoupe(ctx) } }.start()
     }
 
     private fun lireEnAttente(ctx: Context) {
         Prefs.briefingALire(ctx, false)
-        Lecteur.lire(ctx, Prefs.dernierBriefing(ctx))
+        Lecteur.lire(ctx, Prefs.dernierBriefing(ctx), alerte = true)
     }
 
     private fun action(ctx: Context, quoi: String, label: String) = Notification.Action.Builder(
@@ -53,12 +62,9 @@ object Briefings {
     ).build()
 
     private fun afficher(ctx: Context, b: Message.Briefing) {
-        val ouvrir = b.url?.let {
-            PendingIntent.getActivity(
-                ctx, 7, Intent(Intent.ACTION_VIEW, Uri.parse(it)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-            )
-        } ?: Notifs.ouvrirAppli(ctx)
+        // Toucher la notification (ou téléphone verrouillé : écran plein) ouvre le Kanban du briefing.
+        val ouvrir = if (Prefs.kanban(ctx).isNotEmpty()) KanbanActivity.enAttente(ctx) else Notifs.ouvrirAppli(ctx)
+
         val n = Notification.Builder(ctx, Notifs.CANAL_IMPORTANT)
             .setSmallIcon(R.drawable.ic_notif)
             .setContentTitle(b.titre)
@@ -66,6 +72,7 @@ object Briefings {
             .setStyle(Notification.BigTextStyle().bigText(b.texte))
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setContentIntent(ouvrir)
+            .setFullScreenIntent(ouvrir, true)
             .addAction(action(ctx, RELIRE, "Relire"))
             .addAction(action(ctx, STOP, "Stop"))
             .addAction(
@@ -103,7 +110,7 @@ class DetailsActivity : android.app.Activity() {
 class BriefingReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         when (intent.action) {
-            Briefings.RELIRE -> Lecteur.lire(ctx, Prefs.dernierBriefing(ctx))
+            Briefings.RELIRE -> Lecteur.lire(ctx, Prefs.dernierBriefing(ctx), alerte = true)
             Briefings.STOP -> Lecteur.stop(ctx)
         }
     }

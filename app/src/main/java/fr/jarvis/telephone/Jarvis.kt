@@ -52,6 +52,20 @@ object Jarvis {
         }
     }
 
+    /** Réveil coupé : Jarvis envoie le briefing du jour s'il n'est pas déjà parti. Hors du fil principal. */
+    fun reveilCoupe(ctx: Context): Boolean {
+        if (Prefs.jarvis(ctx).isEmpty()) return false
+        return appel("${Prefs.jarvis(ctx)}/api/briefing/reveil", "POST", Prefs.jetonJarvis(ctx), "application/json", 2) { it.write("{}".toByteArray()) }
+            .optBoolean("envoye")
+    }
+
+    /** Bouton « Tester le briefing maintenant » : Jarvis le calcule et l'envoie (sans compter pour la journée). */
+    fun testerBriefing(ctx: Context) {
+        if (Prefs.jarvis(ctx).isEmpty()) throw Erreur("Lie d'abord l'appli à Jarvis (« Lier à Jarvis »).")
+        val corps = """{"envoyer":true}""".toByteArray()
+        appel("${Prefs.jarvis(ctx)}/api/briefing", "POST", Prefs.jetonJarvis(ctx), "application/json", corps.size.toLong()) { it.write(corps) }
+    }
+
     fun ecrans(ctx: Context): List<String> {
         val r = appel("${Prefs.jarvis(ctx)}/api/ecran", "GET", Prefs.jetonJarvis(ctx))
         val liste = r.getJSONArray("ecrans")

@@ -100,6 +100,17 @@
             android:name=".AlarmReceiver"
             android:exported="false" />
 
+        <!-- Kanban du briefing en plein écran, même téléphone verrouillé. -->
+        <activity
+            android:name=".KanbanActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Material.NoActionBar"
+            android:turnScreenOn="true" />
+
         <!-- SMS envoyé (ou refusé) : accusé à Jarvis. -->
         <receiver
             android:name=".SmsResultat"
