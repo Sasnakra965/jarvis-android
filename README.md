@@ -24,7 +24,7 @@ Corps d'un message publié sur le sujet ntfy (`POST https://ntfy.sh/<sujet>`), e
 
 | type | champs | effet |
 |---|---|---|
-| `notif` | `titre`, `message`, `priorite` : `basse` \| `normale` \| `haute` \| `urgente`, `url` (facultatif) | notification (haute/urgente : canal « Alertes importantes ») ; toucher ouvre `url` |
+| `notif` | `titre`, `message`, `priorite` : `basse` \| `normale` \| `haute` \| `urgente`, `url`, `vocal`, `envoye` (ms), `ack` (facultatifs) | notification (haute/urgente : canal « Alertes importantes ») ; toucher ouvre `url`. Priorité haute/urgente, `vocal: true` ou tag ntfy `vocal` : titre et texte lus à voix haute (réglage « Lecture vocale ») ; `ack` reçoit `{lu, recu}` en POST au début de la lecture |
 | `reveil` | `id`, `timestamp` (secondes) **ou** `heure` + `minute`, `libelle` | programme une alarme ; même `id` = remplace |
 | `annuler_reveil` | `id` (facultatif) | annule ce réveil, ou tous sans `id` |
 | `choix` | `titre`, `message`, `url` (facultatif), `choix` : `[{libelle, url}]` (3 au plus) | notification à boutons : chaque bouton envoie un `POST` à son `url` sans ouvrir l'appli, puis affiche « ✅ Noté » ; toucher ouvre `url` |

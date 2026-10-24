@@ -118,6 +118,30 @@ class ListenerService : Service() {
         }
     }
 
+    /** Lit l'alerte (titre puis texte) ; si Jarvis le demande, lui renvoie l'heure du début de lecture. */
+    private fun lireAlerte(msg: Message.Notif) {
+        val recu = System.currentTimeMillis()
+        val texte = pourLaVoix("${msg.titre}. ${msg.texte}")
+        Lecteur.lire(this, texte, alerte = true) {
+            val lu = System.currentTimeMillis()
+            msg.envoye?.let { Prefs.ajouterHistorique(this, "🔊 Lu ${(lu - it) / 100 / 10.0} s après l'envoi") }
+            msg.ack?.let { url ->
+                Thread {
+                    runCatching {
+                        val c = URL(url).openConnection() as HttpURLConnection
+                        c.requestMethod = "POST"
+                        c.doOutput = true
+                        c.setRequestProperty("Content-Type", "application/json")
+                        c.connectTimeout = 15_000
+                        c.outputStream.use { it.write("""{"lu":$lu,"recu":$recu}""".toByteArray()) }
+                        c.responseCode
+                        c.disconnect()
+                    }
+                }.start()
+            }
+        }
+    }
+
     private fun traiter(ev: JSONObject) {
         val msg = Message.lire(ev, Prefs.cleNtfy(this)) ?: return
         if (!Prefs.nouveauMessage(this, ev.optString("id"))) return
@@ -125,6 +149,7 @@ class ListenerService : Service() {
             is Message.Notif -> {
                 Notifs.afficher(this, msg.titre, msg.texte, msg.priorite, msg.url)
                 Prefs.ajouterHistorique(this, "🔔 ${msg.titre} : ${msg.texte}")
+                if (msg.aLire && Prefs.lectureVocale(this)) lireAlerte(msg)
             }
             is Message.Reveil -> {
                 if (Alarms.programmer(this, msg.id, msg.quand, msg.libelle)) {

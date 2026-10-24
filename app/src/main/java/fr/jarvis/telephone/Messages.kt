@@ -32,7 +32,20 @@ import javax.crypto.spec.SecretKeySpec
  * avec la clé récupérée auprès de Jarvis ; le serveur ntfy ne voit que ce charabia.
  */
 sealed class Message {
-    data class Notif(val titre: String, val texte: String, val priorite: Int, val url: String? = null) : Message()
+    data class Notif(
+        val titre: String,
+        val texte: String,
+        val priorite: Int,
+        val url: String? = null,
+        /** Marquée « vocal » (champ JSON ou tag ntfy) : à lire à voix haute. */
+        val vocal: Boolean = false,
+        /** Heure d'envoi (ms) et adresse d'accusé de lecture (mesure du délai, facultatif). */
+        val envoye: Long? = null,
+        val ack: String? = null,
+    ) : Message() {
+        /** À lire à voix haute : priorité ≥ 4 (haute ou urgente) ou marquée « vocal ». */
+        val aLire get() = priorite >= 4 || vocal
+    }
     data class Reveil(val id: String, val quand: Long, val libelle: String) : Message()
     data class AnnulerReveil(val id: String?) : Message()
     data class Choix(val titre: String, val texte: String, val url: String?, val boutons: List<Pair<String, String>>) : Message()
@@ -46,6 +59,12 @@ sealed class Message {
 
     companion object {
         const val NORMALE = 3
+
+        /** Tag « vocal » posé sur le message ntfy (ex. envoi depuis la page ntfy ou un script). */
+        private fun tagVocal(ev: JSONObject): Boolean {
+            val tags = ev.optJSONArray("tags") ?: return false
+            return (0 until tags.length()).any { tags.optString(it).equals("vocal", ignoreCase = true) }
+        }
 
         fun priorite(nom: String?): Int = when (nom?.lowercase()) {
             "basse" -> 2
@@ -74,7 +93,7 @@ sealed class Message {
                 json = runCatching { JSONObject(corps) }.getOrNull()
             }
             if (json == null || !json.has("type")) {
-                return Notif(ev.optString("title").ifEmpty { "Jarvis" }, corps, ev.optInt("priority", NORMALE))
+                return Notif(ev.optString("title").ifEmpty { "Jarvis" }, corps, ev.optInt("priority", NORMALE), vocal = tagVocal(ev))
             }
             return when (json.getString("type")) {
                 "reveil" -> {
@@ -112,6 +131,9 @@ sealed class Message {
                     json.optString("message"),
                     priorite(json.optString("priorite")),
                     json.optString("url").ifEmpty { null },
+                    json.optBoolean("vocal", false) || tagVocal(ev),
+                    json.optLong("envoye", 0).takeIf { it > 0 },
+                    json.optString("ack").takeIf { it.startsWith("https://") || it.startsWith("http://") },
                 )
             }
         }

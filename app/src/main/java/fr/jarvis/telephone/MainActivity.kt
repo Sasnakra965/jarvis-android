@@ -18,6 +18,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import com.google.mlkit.vision.barcode.common.Barcode
@@ -77,6 +78,17 @@ class MainActivity : Activity() {
         lienJarvis = TextView(this).apply { textSize = 15f }
         col.addView(lienJarvis)
         col.addView(bouton("Lier à Jarvis (scanner le QR code)") { scannerQr() })
+
+        col.addView(titre("Lecture vocale"))
+        col.addView(Switch(this).apply {
+            text = "Lire à voix haute les alertes importantes (départ, trafic, rappels importants), écouteurs Bluetooth sinon haut-parleur"
+            textSize = 15f
+            isChecked = Prefs.lectureVocale(this@MainActivity)
+            setOnCheckedChangeListener { _, oui -> Prefs.lectureVocale(this@MainActivity, oui) }
+        })
+        col.addView(bouton("Tester la lecture vocale") {
+            Lecteur.lire(this, "Test de Jarvis. C'est l'heure de partir pour ton rendez-vous à Aubagne, 25 minutes de route.", alerte = true)
+        })
 
         col.addView(titre("Autorisations"))
         autorisations = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }

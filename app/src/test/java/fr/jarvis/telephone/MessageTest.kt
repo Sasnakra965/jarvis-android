@@ -37,6 +37,21 @@ class MessageTest {
         assertEquals("Spam" to "https://j/api/mails/choix?j=x&c=spam", m.boutons[0])
     }
 
+    @Test fun lectureVocale() {
+        val urgent = Message.lire(ev("""{"type":"notif","titre":"Départ","message":"Go","priorite":"urgente","vocal":true,"envoye":1761120000123,"ack":"https://j/api/notif/ack?j=x"}""")) as Message.Notif
+        assertTrue(urgent.aLire)
+        assertEquals(1761120000123L, urgent.envoye)
+        assertEquals("https://j/api/notif/ack?j=x", urgent.ack)
+        val normale = Message.lire(ev("""{"type":"notif","titre":"Info","message":"Rien"}""")) as Message.Notif
+        assertEquals(false, normale.aLire)
+        val haute = Message.lire(ev("""{"type":"notif","titre":"A","message":"B","priorite":"haute"}""")) as Message.Notif
+        assertTrue(haute.aLire)
+        // Message brut envoyé avec le tag ntfy « vocal »
+        val brut = Message.lire(ev("Pars maintenant", "Jarvis").put("tags", org.json.JSONArray().put("vocal"))) as Message.Notif
+        assertTrue(brut.aLire)
+        assertEquals("Départ Bonjour", pourLaVoix("🚗 Départ 👋 Bonjour"))
+    }
+
     @Test fun texteSimple() {
         assertEquals(Message.Notif("Test", "bonjour", 3), Message.lire(ev("bonjour", "Test")))
         assertEquals(Message.Notif("Jarvis", "{pas du json", 3), Message.lire(ev("{pas du json")))

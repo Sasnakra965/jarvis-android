@@ -74,6 +74,11 @@ object Prefs {
 
     fun effacerHistorique(ctx: Context) = p(ctx).edit().remove("historique").apply()
 
+    // --- Lecture vocale des alertes (départ, trafic, rappels importants) ---
+
+    fun lectureVocale(ctx: Context): Boolean = p(ctx).getBoolean("lecture_vocale", true)
+    fun lectureVocale(ctx: Context, oui: Boolean) = p(ctx).edit().putBoolean("lecture_vocale", oui).apply()
+
     // --- Briefing du matin (texte à relire) et réveil en train de sonner ---
 
     fun garderBriefing(ctx: Context, parole: String) = p(ctx).edit().putString("briefing", parole).apply()
