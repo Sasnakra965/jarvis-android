@@ -5,6 +5,8 @@ import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import java.util.Locale
@@ -15,16 +17,19 @@ import java.util.concurrent.atomic.AtomicInteger
  * Lecture à voix haute (synthèse vocale d'Android, voix française) : écran verrouillé compris, depuis le
  * service de premier plan. Sortie « média » : le système l'envoie aux écouteurs Bluetooth s'ils sont
  * connectés, sinon au haut-parleur ; le mode silencieux ne coupe pas le son média.
- * Alerte (départ, trafic, rappel important) : mise à la suite d'une lecture en cours, volume média au
- * maximum le temps de la lecture, puis remis comme avant.
+ * Alerte (départ, trafic, rappel important) : musique en pause, volume média au maximum le temps de la
+ * lecture, puis volume remis comme avant et musique relancée. Briefing : musique seulement baissée.
  */
 object Lecteur {
     private var tts: TextToSpeech? = null
     private var pret = false
     private val enAttente = mutableListOf<Triple<String, Boolean, (() -> Unit)?>>()
     private var focus: AudioFocusRequest? = null
+    private var focusPause = false
+    private val ui = Handler(Looper.getMainLooper())
     private var volumeAvant: Int? = null
     private val numero = AtomicInteger()
+    private val aVenir = AtomicInteger() // alertes programmées pas encore lancées
     /** Actions à lancer quand une lecture commence (accusé de lecture pour mesurer le délai). */
     private val auDebut = ConcurrentHashMap<String, () -> Unit>()
 
@@ -66,31 +71,42 @@ object Lecteur {
 
     private fun parler(ctx: Context, texte: String, alerte: Boolean, auDemarrage: (() -> Unit)?) {
         val am = ctx.getSystemService(AudioManager::class.java)
-        if (alerte) {
-            // Alerte prioritaire : volume média au maximum le temps de la lecture, puis remis comme avant.
-            val max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-            if (volumeAvant == null) volumeAvant = am.getStreamVolume(AudioManager.STREAM_MUSIC)
-            am.setStreamVolume(AudioManager.STREAM_MUSIC, max, 0)
-        }
-        // Baisse la musique le temps de la lecture, puis la rend.
-        if (focus == null) {
-            focus = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK).setAudioAttributes(attributs).build()
+        // Alerte : la musique se met en PAUSE (focus exclusif) ; briefing : elle est seulement baissée.
+        if (focus == null || (alerte && !focusPause)) {
+            focus?.let { am.abandonAudioFocusRequest(it) }
+            val type = if (alerte) AudioManager.AUDIOFOCUS_GAIN_TRANSIENT else AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
+            focus = AudioFocusRequest.Builder(type).setAudioAttributes(attributs).build()
+            focusPause = alerte
             am.requestAudioFocus(focus!!)
         }
         val id = "jarvis-${numero.incrementAndGet()}"
         auDemarrage?.let { auDebut[id] = it }
-        tts?.speak(texte, if (alerte) TextToSpeech.QUEUE_ADD else TextToSpeech.QUEUE_FLUSH, Bundle(), id)
+        if (!alerte) {
+            tts?.speak(texte, TextToSpeech.QUEUE_FLUSH, Bundle(), id)
+            return
+        }
+        // Laisse 0,2 s au lecteur de musique pour se mettre en pause, puis volume au maximum et lecture.
+        aVenir.incrementAndGet()
+        ui.postDelayed({
+            aVenir.decrementAndGet()
+            val max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+            if (volumeAvant == null) volumeAvant = am.getStreamVolume(AudioManager.STREAM_MUSIC)
+            am.setStreamVolume(AudioManager.STREAM_MUSIC, max, 0)
+            tts?.speak(texte, TextToSpeech.QUEUE_ADD, Bundle(), id)
+        }, 200)
     }
 
     /** Fin d'une lecture : rend le volume et la musique quand plus rien n'est en cours. */
     private fun fin(ctx: Context, id: String?) {
         id?.let { auDebut.remove(it) }
-        if (tts?.isSpeaking == true) return
+        if (tts?.isSpeaking == true || aVenir.get() > 0) return // une alerte attend encore son tour
         val am = ctx.getSystemService(AudioManager::class.java)
         volumeAvant?.let { am.setStreamVolume(AudioManager.STREAM_MUSIC, it, 0) }
         volumeAvant = null
+        // Rendre le focus relance la musique mise en pause.
         focus?.let { am.abandonAudioFocusRequest(it) }
         focus = null
+        focusPause = false
     }
 
     @Synchronized
