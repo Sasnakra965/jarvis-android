@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibilite_description">Quand tu demandes à Jarvis d\'envoyer un message WhatsApp, ce service appuie à ta place sur « Envoyer » dans la conversation ouverte. Il n\'agit que dans WhatsApp, et seulement pour un message préparé par Jarvis.</string>
+</resources>

@@ -16,10 +16,19 @@
         android:name="android.permission.SCHEDULE_EXACT_ALARM"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Messages envoyés à la demande de Jarvis (outil envoyer_message). -->
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
 
     <!-- « Plus de détails » du briefing : ouvrir l'appli Claude si elle est installée. -->
     <queries>
         <package android:name="com.anthropic.claude" />
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" android:host="wa.me" />
+        </intent>
     </queries>
 
     <application
@@ -90,6 +99,25 @@
         <receiver
             android:name=".AlarmReceiver"
             android:exported="false" />
+
+        <!-- SMS envoyé (ou refusé) : accusé à Jarvis. -->
+        <receiver
+            android:name=".SmsResultat"
+            android:exported="false" />
+
+        <!-- Appuie sur « Envoyer » dans WhatsApp pour un message préparé par Jarvis (à activer dans Accessibilité). -->
+        <service
+            android:name=".WhatsappService"
+            android:exported="false"
+            android:label="Jarvis : envoi WhatsApp"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibilite" />
+        </service>
 
         <!-- Questions à boutons (nouvel expéditeur de mail…) : réponse envoyée à Jarvis. -->
         <receiver

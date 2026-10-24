@@ -74,6 +74,20 @@ object Prefs {
 
     fun effacerHistorique(ctx: Context) = p(ctx).edit().remove("historique").apply()
 
+    // --- Message WhatsApp préparé : le service d'accessibilité appuiera sur Envoyer ---
+
+    fun whatsappEnAttente(ctx: Context, ack: String, nom: String, jusqua: Long) =
+        p(ctx).edit().putString("wa_ack", ack).putString("wa_nom", nom).putLong("wa_jusqua", jusqua).apply()
+
+    /** (adresse d'accusé, nom) du message WhatsApp en attente, null s'il n'y en a pas ou s'il a expiré. */
+    fun whatsappEnAttente(ctx: Context): Pair<String, String>? {
+        val ack = p(ctx).getString("wa_ack", null) ?: return null
+        if (p(ctx).getLong("wa_jusqua", 0) < System.currentTimeMillis()) return null
+        return ack to p(ctx).getString("wa_nom", "")!!
+    }
+
+    fun oublierWhatsapp(ctx: Context) = p(ctx).edit().remove("wa_ack").remove("wa_nom").remove("wa_jusqua").apply()
+
     // --- Lecture vocale des alertes (départ, trafic, rappels importants) ---
 
     fun lectureVocale(ctx: Context): Boolean = p(ctx).getBoolean("lecture_vocale", true)

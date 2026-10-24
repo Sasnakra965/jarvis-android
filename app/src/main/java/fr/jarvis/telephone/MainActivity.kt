@@ -209,6 +209,13 @@ class MainActivity : Activity() {
                 startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:$packageName")))
             }
         }
+        ligne("envoyer des SMS et lire les contacts (messages de Jarvis)",
+            Envois.autorise(this, Manifest.permission.SEND_SMS) && Envois.autorise(this, Manifest.permission.READ_CONTACTS)) {
+            requestPermissions(arrayOf(Manifest.permission.SEND_SMS, Manifest.permission.READ_CONTACTS), 2)
+        }
+        ligne("envoi WhatsApp automatique (Accessibilité › Jarvis : envoi WhatsApp)", Envois.serviceActif(this)) {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
         val pleinEcran = Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE || nm.canUseFullScreenIntent()
         ligne("réveil en plein écran", pleinEcran) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {

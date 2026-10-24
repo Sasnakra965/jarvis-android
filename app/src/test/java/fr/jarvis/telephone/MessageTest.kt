@@ -52,6 +52,26 @@ class MessageTest {
         assertEquals("Départ Bonjour", pourLaVoix("🚗 Départ 👋 Bonjour"))
     }
 
+    @Test fun envoiMessage() {
+        val m = Message.lire(ev("""{"type":"message","id":"7","destinataire":" Paul ","texte":"J'arrive","canal":"whatsapp","ack":"https://j/api/messages/ack?j=x"}""")) as Message.Envoi
+        assertEquals(Message.Envoi("7", "Paul", "J'arrive", "whatsapp", "https://j/api/messages/ack?j=x"), m)
+        assertEquals("sms", (Message.lire(ev("""{"type":"message","id":"8","destinataire":"Paul","texte":"x","ack":"https://j/a"}""")) as Message.Envoi).canal)
+        assertNull(Message.lire(ev("""{"type":"message","id":"9","destinataire":"Paul","texte":"x","ack":"javascript:x"}""")))
+    }
+
+    @Test fun contactsEtNumeros() {
+        assertEquals("33612345678", Envois.international("06 12 34 56 78"))
+        assertEquals("33612345678", Envois.international("+33 6 12 34 56 78"))
+        assertEquals("33612345678", Envois.international("0033612345678"))
+        assertTrue(Envois.estNumero("06 12 34 56 78"))
+        assertEquals(false, Envois.estNumero("Paul"))
+        val tous = listOf("Paul Martin" to "06 11 11 11 11", "Paulette" to "06 22 22 22 22", "Paul" to "06 33 33 33 33", "Paul" to "+33 6 33 33 33 33", "Hélène Ribot" to "06 44")
+        assertEquals(listOf("Paul" to "06 33 33 33 33"), Envois.filtrer(tous, "paul"))
+        assertEquals(listOf("Paul Martin" to "06 11 11 11 11"), Envois.filtrer(tous, "Paul Martin"))
+        assertEquals(listOf("Hélène Ribot" to "06 44"), Envois.filtrer(tous, "helene"))
+        assertEquals(2, Envois.filtrer(listOf("Jo Dupont" to "1", "Jo Durand" to "2"), "jo").size)
+    }
+
     @Test fun texteSimple() {
         assertEquals(Message.Notif("Test", "bonjour", 3), Message.lire(ev("bonjour", "Test")))
         assertEquals(Message.Notif("Jarvis", "{pas du json", 3), Message.lire(ev("{pas du json")))

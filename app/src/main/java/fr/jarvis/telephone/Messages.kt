@@ -23,6 +23,9 @@ import javax.crypto.spec.SecretKeySpec
  *    "attendre_reveil":false}
  *        notification lue à voix haute (parole, sinon message) ; attendre_reveil : lire à l'arrêt du réveil
  *
+ *   {"type":"message", "id":"12", "destinataire":"Paul" | "0612345678", "texte":"…", "canal":"sms"|"whatsapp", "ack":"https://…"}
+ *        SMS (ou WhatsApp) envoyé par le téléphone ; ack reçoit {statut: envoye|echec|choix|pret, detail?, numero?, choix?}
+ *
  *   {"type":"choix", "titre":"…", "message":"…", "url":"https://…", "choix":[{"libelle":"Spam","url":"https://…"}]}
  *        notification à boutons (3 au plus) : chaque bouton envoie un POST à son url ; toucher ouvre url
  *
@@ -48,6 +51,7 @@ sealed class Message {
     }
     data class Reveil(val id: String, val quand: Long, val libelle: String) : Message()
     data class AnnulerReveil(val id: String?) : Message()
+    data class Envoi(val id: String, val destinataire: String, val texte: String, val canal: String, val ack: String) : Message()
     data class Choix(val titre: String, val texte: String, val url: String?, val boutons: List<Pair<String, String>>) : Message()
     data class Briefing(
         val titre: String,
@@ -106,6 +110,17 @@ sealed class Message {
                     )
                 }
                 "annuler_reveil" -> AnnulerReveil(json.optString("id").ifEmpty { null })
+                "message" -> {
+                    val ack = json.optString("ack")
+                    if (!ack.startsWith("https://") && !ack.startsWith("http://")) return null
+                    Envoi(
+                        json.optString("id"),
+                        json.optString("destinataire").trim(),
+                        json.optString("texte"),
+                        if (json.optString("canal") == "whatsapp") "whatsapp" else "sms",
+                        ack,
+                    )
+                }
                 "choix" -> {
                     val c = json.optJSONArray("choix")
                     Choix(
