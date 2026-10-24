@@ -15,8 +15,8 @@ import java.util.concurrent.atomic.AtomicInteger
  * Lecture à voix haute (synthèse vocale d'Android, voix française) : écran verrouillé compris, depuis le
  * service de premier plan. Sortie « média » : le système l'envoie aux écouteurs Bluetooth s'ils sont
  * connectés, sinon au haut-parleur ; le mode silencieux ne coupe pas le son média.
- * Alerte (départ, trafic, rappel important) : mise à la suite d'une lecture en cours, et si le volume
- * média est trop bas pour être entendu, il est remonté le temps de la lecture puis remis comme avant.
+ * Alerte (départ, trafic, rappel important) : mise à la suite d'une lecture en cours, volume média au
+ * maximum le temps de la lecture, puis remis comme avant.
  */
 object Lecteur {
     private var tts: TextToSpeech? = null
@@ -33,7 +33,7 @@ object Lecteur {
         .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
         .build()
 
-    /** Lit un texte. alerte : à la suite (sans couper) et volume rendu audible ; auDemarrage : appelé au début. */
+    /** Lit un texte. alerte : à la suite (sans couper) et volume au maximum ; auDemarrage : appelé au début. */
     @Synchronized
     fun lire(ctx: Context, texte: String, alerte: Boolean = false, auDemarrage: (() -> Unit)? = null) {
         if (texte.isBlank()) return
@@ -67,13 +67,10 @@ object Lecteur {
     private fun parler(ctx: Context, texte: String, alerte: Boolean, auDemarrage: (() -> Unit)?) {
         val am = ctx.getSystemService(AudioManager::class.java)
         if (alerte) {
-            // Volume média trop bas pour entendre l'alerte : remonté le temps de la lecture.
+            // Alerte prioritaire : volume média au maximum le temps de la lecture, puis remis comme avant.
             val max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-            val actuel = am.getStreamVolume(AudioManager.STREAM_MUSIC)
-            if (actuel < max * 0.4 && volumeAvant == null) {
-                volumeAvant = actuel
-                am.setStreamVolume(AudioManager.STREAM_MUSIC, (max * 0.6).toInt().coerceAtLeast(1), 0)
-            }
+            if (volumeAvant == null) volumeAvant = am.getStreamVolume(AudioManager.STREAM_MUSIC)
+            am.setStreamVolume(AudioManager.STREAM_MUSIC, max, 0)
         }
         // Baisse la musique le temps de la lecture, puis la rend.
         if (focus == null) {

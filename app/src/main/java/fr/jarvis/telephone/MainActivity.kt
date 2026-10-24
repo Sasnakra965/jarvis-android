@@ -81,7 +81,7 @@ class MainActivity : Activity() {
 
         col.addView(titre("Lecture vocale"))
         col.addView(Switch(this).apply {
-            text = "Lire à voix haute les alertes importantes (départ, trafic, rappels importants), écouteurs Bluetooth sinon haut-parleur"
+            text = "Lire à voix haute les alertes importantes (départ, trafic, rappels importants), volume au maximum, écouteurs Bluetooth sinon haut-parleur"
             textSize = 15f
             isChecked = Prefs.lectureVocale(this@MainActivity)
             setOnCheckedChangeListener { _, oui -> Prefs.lectureVocale(this@MainActivity, oui) }
