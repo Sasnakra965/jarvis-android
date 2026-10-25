@@ -162,6 +162,7 @@ class ListenerService : Service() {
             }
             is Message.Briefing -> Briefings.recevoir(this, msg)
             is Message.Envoi -> Envois.traiter(this, msg)
+            is Message.Appel -> Appels.traiter(this, msg)
             is Message.Choix -> {
                 Choix.afficher(this, msg)
                 Prefs.ajouterHistorique(this, "❓ ${msg.titre} : ${msg.texte}")

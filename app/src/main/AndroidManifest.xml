@@ -19,6 +19,8 @@
     <!-- Messages envoyés à la demande de Jarvis (outil envoyer_message). -->
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- Appels passés à la demande de Jarvis (outil appeler). -->
+    <uses-permission android:name="android.permission.CALL_PHONE" />
 
     <!-- « Plus de détails » du briefing : ouvrir l'appli Claude si elle est installée. -->
     <queries>

@@ -154,7 +154,7 @@ object Envois {
         return (exacts.ifEmpty { trouves }).distinctBy { it.second.filter { c -> c.isDigit() }.takeLast(9) }
     }
 
-    private fun chercher(ctx: Context, nom: String): List<Pair<String, String>> {
+    fun chercher(ctx: Context, nom: String): List<Pair<String, String>> {
         val tous = mutableListOf<Pair<String, String>>()
         ctx.contentResolver.query(
             ContactsContract.CommonDataKinds.Phone.CONTENT_URI,

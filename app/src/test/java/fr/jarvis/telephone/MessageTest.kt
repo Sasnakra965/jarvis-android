@@ -59,6 +59,16 @@ class MessageTest {
         assertNull(Message.lire(ev("""{"type":"message","id":"9","destinataire":"Paul","texte":"x","ack":"javascript:x"}""")))
     }
 
+    @Test fun appel() {
+        val c = Message.lire(ev("""{"type":"appel","id":"3","action":"chercher","destinataire":" Paul ","ack":"https://j/api/appels/ack?j=x"}""")) as Message.Appel
+        assertEquals(Message.Appel("3", "chercher", "Paul", null, null, "https://j/api/appels/ack?j=x"), c)
+        val a = Message.lire(ev("""{"type":"appel","id":"4","action":"appeler","destinataire":"Paul","nom":"Paul Martin","numero":"06 12","ack":"https://j/a"}""")) as Message.Appel
+        assertEquals("appeler", a.action)
+        assertEquals("06 12", a.numero)
+        assertEquals("chercher", (Message.lire(ev("""{"type":"appel","id":"5","destinataire":"Paul","ack":"https://j/a"}""")) as Message.Appel).action)
+        assertNull(Message.lire(ev("""{"type":"appel","id":"6","destinataire":"Paul","ack":"javascript:x"}""")))
+    }
+
     @Test fun contactsEtNumeros() {
         assertEquals("33612345678", Envois.international("06 12 34 56 78"))
         assertEquals("33612345678", Envois.international("+33 6 12 34 56 78"))

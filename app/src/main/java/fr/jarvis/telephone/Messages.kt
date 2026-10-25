@@ -26,6 +26,10 @@ import javax.crypto.spec.SecretKeySpec
  *   {"type":"message", "id":"12", "destinataire":"Paul" | "0612345678", "texte":"…", "canal":"sms"|"whatsapp", "ack":"https://…"}
  *        SMS (ou WhatsApp) envoyé par le téléphone ; ack reçoit {statut: envoye|echec|choix|pret, detail?, numero?, choix?}
  *
+ *   {"type":"appel", "id":"3", "action":"chercher"|"appeler", "destinataire":"Paul", "nom":"…", "numero":"…", "ack":"https://…"}
+ *        chercher : contact cherché, sans appeler ; ack reçoit {statut: trouve|choix|echec, nom?, numero?, choix?}
+ *        appeler : appel de numero (son vers le Bluetooth s'il est connecté) ; ack reçoit {statut: appel_lance|echec, audio?, detail?}
+ *
  *   {"type":"choix", "titre":"…", "message":"…", "url":"https://…", "choix":[{"libelle":"Spam","url":"https://…"}]}
  *        notification à boutons (3 au plus) : chaque bouton envoie un POST à son url ; toucher ouvre url
  *
@@ -52,6 +56,7 @@ sealed class Message {
     data class Reveil(val id: String, val quand: Long, val libelle: String) : Message()
     data class AnnulerReveil(val id: String?) : Message()
     data class Envoi(val id: String, val destinataire: String, val texte: String, val canal: String, val ack: String) : Message()
+    data class Appel(val id: String, val action: String, val destinataire: String, val nom: String?, val numero: String?, val ack: String) : Message()
     data class Choix(val titre: String, val texte: String, val url: String?, val boutons: List<Pair<String, String>>) : Message()
     data class Briefing(
         val titre: String,
@@ -118,6 +123,18 @@ sealed class Message {
                         json.optString("destinataire").trim(),
                         json.optString("texte"),
                         if (json.optString("canal") == "whatsapp") "whatsapp" else "sms",
+                        ack,
+                    )
+                }
+                "appel" -> {
+                    val ack = json.optString("ack")
+                    if (!ack.startsWith("https://") && !ack.startsWith("http://")) return null
+                    Appel(
+                        json.optString("id"),
+                        if (json.optString("action") == "appeler") "appeler" else "chercher",
+                        json.optString("destinataire").trim(),
+                        json.optString("nom").trim().ifEmpty { null },
+                        json.optString("numero").trim().ifEmpty { null },
                         ack,
                     )
                 }

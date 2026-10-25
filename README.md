@@ -7,6 +7,7 @@ via [ntfy](https://ntfy.sh), sans MacroDroid ni Chrome :
 - notifications immédiates, même écran éteint ;
 - **briefing du matin lu à voix haute** (synthèse vocale d'Android), relu après l'arrêt du réveil ;
 - **SMS et WhatsApp envoyés à la demande de Jarvis** (autorisations SMS et Contacts, service d'accessibilité « Jarvis : envoi WhatsApp ») ;
+- **appels passés à la demande de Jarvis**, après confirmation du nom et du numéro, en Bluetooth si la voiture ou des oreillettes sont connectées (autorisation Téléphone) ;
 - vrais réveils (`AlarmManager.setAlarmClock`) : écran plein avec sonnerie, boutons **Arrêter** et **Snooze 10 min**, annulation à distance ;
 - écran unique : serveur, sujet, autorisations, tests, réveils programmés, historique.
 - **partage vers la télé** : dans Google Photos (ou la galerie), « Partager › Jarvis (télé) » envoie une photo,
@@ -30,6 +31,7 @@ Corps d'un message publié sur le sujet ntfy (`POST https://ntfy.sh/<sujet>`), e
 | `annuler_reveil` | `id` (facultatif) | annule ce réveil, ou tous sans `id` |
 | `choix` | `titre`, `message`, `url` (facultatif), `choix` : `[{libelle, url}]` (3 au plus) | notification à boutons : chaque bouton envoie un `POST` à son `url` sans ouvrir l'appli, puis affiche « ✅ Noté » ; toucher ouvre `url` |
 | `message` | `id`, `destinataire` (nom de contact ou numéro), `texte`, `canal` : `sms` \| `whatsapp`, `ack` | SMS envoyé par le téléphone (contact cherché par nom ; plusieurs → la liste repart dans l'accusé), ou WhatsApp : conversation ouverte avec le texte pré-rempli et « Envoyer » appuyé par le service d'accessibilité (verrouillé : notification à valider). `ack` reçoit `{statut: envoye\|echec\|choix\|pret, detail?, numero?, choix?}` |
+| `appel` | `id`, `action` : `chercher` \| `appeler`, `destinataire` (nom de contact ou numéro), `nom`, `numero`, `ack` | `chercher` : contact cherché comme pour les SMS, **sans appeler** ; `ack` reçoit `{statut: trouve\|choix\|echec, nom?, numero?, choix?}`. `appeler` : appel de `numero` par le système d'appel d'Android (même verrouillé), le son part vers l'appareil Bluetooth mains libres s'il y en a un ; `ack` reçoit `{statut: appel_lance\|echec, audio: bluetooth\|telephone, detail?}` |
 | `briefing` | `titre`, `message`, `parole` (texte lu), `url` (facultatif), `attendre_reveil` (facultatif) | notification lue à voix haute (voix française, écran verrouillé, haut-parleur ou écouteurs) ; boutons **Relire**, **Stop**, **Plus de détails** (ouvre l'appli Claude) ; toucher ouvre `url` (le Kanban). Pendant un réveil, ou avec `attendre_reveil`, la lecture attend l'arrêt de l'alarme (20 min au plus) |
 
 ```json
