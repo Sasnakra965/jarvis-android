@@ -101,6 +101,16 @@ object Prefs {
     fun kanban(ctx: Context): String = p(ctx).getString("briefing_kanban", null) ?: jarvis(ctx).takeIf { it.isNotEmpty() }?.let { "$it/briefing/kanban" } ?: ""
     fun dernierBriefing(ctx: Context): String = p(ctx).getString("briefing", "")!!
 
+    /** Récapitulatif complet du dernier briefing (pré-rempli dans Claude) et son adresse chez Jarvis. */
+    fun garderRecap(ctx: Context, url: String?, texte: String?) = p(ctx).edit().putString("recap_url", url).putString("recap", texte).apply()
+    fun recapUrl(ctx: Context): String? = p(ctx).getString("recap_url", null)
+    fun recap(ctx: Context): String? = p(ctx).getString("recap", null)?.takeIf { it.isNotBlank() }
+    fun garderTexteRecap(ctx: Context, texte: String) = p(ctx).edit().putString("recap", texte).apply()
+
+    /** « Ouvrir dans Claude » : message pré-rempli par le lien (sinon : bilan copié, à coller). */
+    fun bilanParLien(ctx: Context): Boolean = p(ctx).getBoolean("bilan_par_lien", true)
+    fun bilanParLien(ctx: Context, oui: Boolean) = p(ctx).edit().putBoolean("bilan_par_lien", oui).apply()
+
     /** Briefing reçu pendant (ou juste avant) un réveil : à lire quand on l'arrête. */
     fun briefingALire(ctx: Context): Boolean = p(ctx).getBoolean("briefing_a_lire", false)
     fun briefingALire(ctx: Context, oui: Boolean) = p(ctx).edit().putBoolean("briefing_a_lire", oui).apply()

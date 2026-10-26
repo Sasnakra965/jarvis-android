@@ -59,6 +59,13 @@ class MessageTest {
         assertNull(Message.lire(ev("""{"type":"message","id":"9","destinataire":"Paul","texte":"x","ack":"javascript:x"}""")))
     }
 
+    @Test fun briefingRecap() {
+        val b = Message.lire(ev("""{"type":"briefing","titre":"B","message":"Salut","recap":"https://j/api/briefing/recap?j=x"}""")) as Message.Briefing
+        assertEquals("https://j/api/briefing/recap?j=x", b.recap)
+        assertNull((Message.lire(ev("""{"type":"briefing","titre":"B","message":"Salut","recap":"javascript:x"}""")) as Message.Briefing).recap)
+        assertNull((Message.lire(ev("""{"type":"briefing","titre":"B","message":"Salut"}""")) as Message.Briefing).recap)
+    }
+
     @Test fun appel() {
         val c = Message.lire(ev("""{"type":"appel","id":"3","action":"chercher","destinataire":" Paul ","ack":"https://j/api/appels/ack?j=x"}""")) as Message.Appel
         assertEquals(Message.Appel("3", "chercher", "Paul", null, null, "https://j/api/appels/ack?j=x"), c)

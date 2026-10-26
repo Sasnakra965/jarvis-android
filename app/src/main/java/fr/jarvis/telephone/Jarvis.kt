@@ -66,6 +66,9 @@ object Jarvis {
         appel("${Prefs.jarvis(ctx)}/api/briefing", "POST", Prefs.jetonJarvis(ctx), "application/json", corps.size.toLong()) { it.write(corps) }
     }
 
+    /** Récapitulatif du briefing (adresse reçue dans la notification, protégée par son jeton). Hors du fil principal. */
+    fun recap(url: String): String = appel(url, "GET", null).optString("texte")
+
     fun ecrans(ctx: Context): List<String> {
         val r = appel("${Prefs.jarvis(ctx)}/api/ecran", "GET", Prefs.jetonJarvis(ctx))
         val liste = r.getJSONArray("ecrans")

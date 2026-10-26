@@ -86,6 +86,12 @@ class MainActivity : Activity() {
             isChecked = Prefs.lectureVocale(this@MainActivity)
             setOnCheckedChangeListener { _, oui -> Prefs.lectureVocale(this@MainActivity, oui) }
         })
+        col.addView(Switch(this).apply {
+            text = "Briefing › « Ouvrir dans Claude » : bilan déjà écrit dans le message (désactivé : bilan copié, à coller)"
+            textSize = 15f
+            isChecked = Prefs.bilanParLien(this@MainActivity)
+            setOnCheckedChangeListener { _, oui -> Prefs.bilanParLien(this@MainActivity, oui) }
+        })
         col.addView(bouton("Tester le briefing maintenant") {
             Toast.makeText(this, "Jarvis prépare ton briefing…", Toast.LENGTH_SHORT).show()
             Thread {
