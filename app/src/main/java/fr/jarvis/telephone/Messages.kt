@@ -21,8 +21,7 @@ import javax.crypto.spec.SecretKeySpec
  *
  *   {"type":"briefing", "titre":"☀️ Briefing", "message":"…", "parole":"…", "url":"https://…/kanban",
  *    "attendre_reveil":false}
- *        notification lue à voix haute (parole, sinon message) ; attendre_reveil : lire à l'arrêt du réveil ;
- *        recap (facultatif) : adresse du récapitulatif complet (GET → {texte}), pour « Ouvrir dans Claude »
+ *        notification lue à voix haute (parole, sinon message) ; attendre_reveil : lire à l'arrêt du réveil
  *
  *   {"type":"message", "id":"12", "destinataire":"Paul" | "0612345678", "texte":"…", "canal":"sms"|"whatsapp", "ack":"https://…"}
  *        SMS (ou WhatsApp) envoyé par le téléphone ; ack reçoit {statut: envoye|echec|choix|pret, detail?, numero?, choix?}
@@ -65,7 +64,6 @@ sealed class Message {
         val parole: String,
         val url: String? = null,
         val attendreReveil: Boolean = false,
-        val recap: String? = null,
     ) : Message()
 
     companion object {
@@ -159,7 +157,6 @@ sealed class Message {
                     json.optString("parole").ifEmpty { json.optString("message") },
                     json.optString("url").ifEmpty { null },
                     json.optBoolean("attendre_reveil", false),
-                    json.optString("recap").takeIf { it.startsWith("https://") || it.startsWith("http://") },
                 )
                 else -> Notif(
                     json.optString("titre").ifEmpty { ev.optString("title").ifEmpty { "Jarvis" } },

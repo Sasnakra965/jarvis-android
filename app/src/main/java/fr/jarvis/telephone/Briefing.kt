@@ -18,8 +18,8 @@ import android.widget.Toast
  * affiché en plein écran (même téléphone verrouillé), notification avec Relire / Stop / Plus de détails.
  * Si un réveil sonne (ou va sonner : attendre_reveil), la lecture attend qu'on arrête l'alarme ; couper le
  * réveil demande aussi à Jarvis le briefing du jour s'il n'est pas encore parti.
- * « Ouvrir dans Claude » : nouvelle conversation avec le récapitulatif complet déjà écrit (lien
- * claude.ai/new?q=…, ouvert par l'appli Claude) ; sinon le bilan est copié et Claude s'ouvre.
+ * « Ouvrir dans Claude » : nouvelle conversation avec « Jarvis, donne-moi le briefing » déjà écrit ; Claude
+ * appelle l'outil briefing de Jarvis et présente lui-même la journée, on lui répond dans la même conversation.
  */
 object Briefings {
     const val RELIRE = "fr.jarvis.telephone.RELIRE"
@@ -28,18 +28,14 @@ object Briefings {
     private const val ATTENTE_MAX_MS = 20 * 60_000L
     private val ui = Handler(Looper.getMainLooper())
 
-    /** Au-delà, le lien pré-rempli risque d'être refusé : copier-coller à la place. */
-    const val LIEN_MAX = 8000
-    const val INTRO = "Voici mon bilan Jarvis. Commence par get_context, puis attends mes instructions."
+    const val DEMANDE = "Jarvis, donne-moi le briefing"
+    private const val APPLI_CLAUDE = "com.anthropic.claude"
 
-    /** Lien « nouvelle conversation » avec le texte pré-rempli ; null s'il est trop long. */
-    fun lienClaude(texte: String): String? = ("https://claude.ai/new?q=" + Uri.encode(texte)).takeIf { it.length <= LIEN_MAX }
+    /** Lien « nouvelle conversation » avec le message déjà écrit (claude.ai : ouvert par l'appli Claude si elle est là). */
+    fun lienClaude(texte: String): String = "https://claude.ai/new?q=" + Uri.encode(texte)
 
     fun recevoir(ctx: Context, b: Message.Briefing) {
         Prefs.garderBriefing(ctx, b.parole)
-        Prefs.garderRecap(ctx, b.recap, null)
-        // Récupéré tout de suite : le bouton marche ensuite même sans réseau.
-        b.recap?.let { url -> Thread { runCatching { Jarvis.recap(url) }.getOrNull()?.takeIf { it.isNotBlank() }?.let { Prefs.garderTexteRecap(ctx, it) } }.start() }
         b.url?.let { Prefs.garderKanban(ctx, it) }
         afficher(ctx, b)
         KanbanActivity.ouvrir(ctx)
@@ -104,51 +100,49 @@ object Briefings {
     }
 
     /**
-     * Nouvelle conversation Claude avec `texte` déjà écrit. Le bilan est toujours copié aussi (filet de sécurité) ;
-     * lien trop long, appli Claude qui ne prend pas le lien ou réglage « copier-coller » : Claude s'ouvre et on
-     * prévient « Bilan copié, colle-le ».
+     * Nouvelle conversation Claude avec `texte` déjà écrit, dans cet ordre :
+     * 1. l'appli Claude, par son lien profond (claude.ai/new?q=…, lien vérifié de l'appli) ;
+     * 2. sinon le site claude.ai avec le même lien, dans le navigateur ;
+     * 3. sinon (ou réglage « copier-coller ») : message copié, Claude ouvert, « Collez et envoyez ».
      */
     fun ouvrirClaudeAvec(ctx: Context, texte: String) {
-        ctx.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("Bilan Jarvis", texte))
-        val lien = lienClaude(texte)
-        if (lien != null && Prefs.bilanParLien(ctx)) {
-            val appli = Intent(Intent.ACTION_VIEW, Uri.parse(lien)).setPackage("com.anthropic.claude").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (Prefs.bilanParLien(ctx)) {
+            val vue = Intent(Intent.ACTION_VIEW, Uri.parse(lienClaude(texte))).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val appli = Intent(vue).setPackage(APPLI_CLAUDE)
             if (appli.resolveActivity(ctx.packageManager) != null && runCatching { ctx.startActivity(appli) }.isSuccess) {
-                Prefs.ajouterHistorique(ctx, "💬 Bilan ouvert dans Claude (lien, ${texte.length} caractères)")
+                Prefs.ajouterHistorique(ctx, "💬 Claude ouvert : « $texte »")
+                return
+            }
+            if (runCatching { ctx.startActivity(vue) }.isSuccess) {
+                Prefs.ajouterHistorique(ctx, "💬 claude.ai ouvert dans le navigateur : « $texte »")
                 return
             }
         }
-        ouvrirClaude(ctx)
-        Toast.makeText(ctx, "📋 Bilan copié, colle-le", Toast.LENGTH_LONG).show()
-        Prefs.ajouterHistorique(ctx, "💬 Bilan copié pour Claude (${texte.length} caractères${if (lien == null) ", trop long pour le lien" else ""})")
+        ctx.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("Jarvis", texte))
+        runCatching { ouvrirClaude(ctx) }
+        Toast.makeText(ctx, "📋 Collez et envoyez", Toast.LENGTH_LONG).show()
+        Prefs.ajouterHistorique(ctx, "💬 « $texte » copié pour Claude")
     }
 
     /** L'appli Claude (pour parler en mode vocal), sinon claude.ai. */
     fun ouvrirClaude(ctx: Context) {
-        val appli = ctx.packageManager.getLaunchIntentForPackage("com.anthropic.claude")
+        val appli = ctx.packageManager.getLaunchIntentForPackage(APPLI_CLAUDE)
             ?: Intent(Intent.ACTION_VIEW, Uri.parse("https://claude.ai/new"))
         ctx.startActivity(appli.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 }
 
 /**
- * « Ouvrir dans Claude » : coupe la lecture et ouvre Claude avec le bilan (un bouton de notification ne peut
- * ouvrir une appli qu'ainsi). Récapitulatif pas encore arrivé : on le demande à Jarvis ; à défaut, le texte lu.
+ * « Ouvrir dans Claude » : coupe la lecture et ouvre une nouvelle conversation Claude avec « Jarvis, donne-moi
+ * le briefing » (un bouton de notification ne peut ouvrir une appli qu'ainsi).
  */
 class DetailsActivity : android.app.Activity() {
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         Lecteur.stop(this)
         Notifs.nm(this).cancel(Briefings.ID_NOTIF)
-        Thread {
-            val texte = Prefs.recap(this)
-                ?: Prefs.recapUrl(this)?.let { url -> runCatching { Jarvis.recap(url) }.getOrNull()?.takeIf { it.isNotBlank() } }
-                ?: Prefs.dernierBriefing(this).takeIf { it.isNotBlank() }?.let { "${Briefings.INTRO}\n\n$it" }
-            runOnUiThread {
-                if (texte != null) Briefings.ouvrirClaudeAvec(this, texte) else Briefings.ouvrirClaude(this)
-                finish()
-            }
-        }.start()
+        Briefings.ouvrirClaudeAvec(this, Briefings.DEMANDE)
+        finish()
     }
 }
 

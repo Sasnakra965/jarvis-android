@@ -59,11 +59,10 @@ class MessageTest {
         assertNull(Message.lire(ev("""{"type":"message","id":"9","destinataire":"Paul","texte":"x","ack":"javascript:x"}""")))
     }
 
-    @Test fun briefingRecap() {
+    @Test fun briefingIgnoreLesChampsInconnus() {
+        // Jarvis envoie encore « recap » (pour l'appli 1.12) : cette version l'ignore.
         val b = Message.lire(ev("""{"type":"briefing","titre":"B","message":"Salut","recap":"https://j/api/briefing/recap?j=x"}""")) as Message.Briefing
-        assertEquals("https://j/api/briefing/recap?j=x", b.recap)
-        assertNull((Message.lire(ev("""{"type":"briefing","titre":"B","message":"Salut","recap":"javascript:x"}""")) as Message.Briefing).recap)
-        assertNull((Message.lire(ev("""{"type":"briefing","titre":"B","message":"Salut"}""")) as Message.Briefing).recap)
+        assertEquals("Salut", b.texte)
     }
 
     @Test fun appel() {
