@@ -129,7 +129,7 @@ class ListenerService : Service() {
     private fun lireAlerte(msg: Message.Notif) {
         val recu = System.currentTimeMillis()
         val texte = pourLaVoix("${msg.titre}. ${msg.texte}")
-        Lecteur.lire(this, texte, alerte = true) {
+        Lecteur.lire(this, texte, alerte = true, audio = msg.audio, auDemarrage = {
             val lu = System.currentTimeMillis()
             msg.envoye?.let { Prefs.ajouterHistorique(this, "🔊 Lu ${(lu - it) / 100 / 10.0} s après l'envoi") }
             msg.ack?.let { url ->
@@ -146,7 +146,7 @@ class ListenerService : Service() {
                     }
                 }.start()
             }
-        }
+        })
     }
 
     private fun traiter(ev: JSONObject) {

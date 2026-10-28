@@ -65,6 +65,14 @@ class MessageTest {
         assertEquals("Salut", b.texte)
     }
 
+    @Test fun voixPiper() {
+        val n = Message.lire(ev("""{"type":"notif","titre":"Départ","message":"Go","priorite":"urgente","vocal":true,"audio":"https://j/api/parole/abc"}""")) as Message.Notif
+        assertEquals("https://j/api/parole/abc", n.audio)
+        val b = Message.lire(ev("""{"type":"briefing","titre":"B","message":"Salut","audio":"https://j/api/parole/def"}""")) as Message.Briefing
+        assertEquals("https://j/api/parole/def", b.audio)
+        assertNull((Message.lire(ev("""{"type":"notif","titre":"A","message":"B","audio":"file:///x"}""")) as Message.Notif).audio)
+    }
+
     @Test fun appel() {
         val c = Message.lire(ev("""{"type":"appel","id":"3","action":"chercher","destinataire":" Paul ","ack":"https://j/api/appels/ack?j=x"}""")) as Message.Appel
         assertEquals(Message.Appel("3", "chercher", "Paul", null, null, "https://j/api/appels/ack?j=x"), c)

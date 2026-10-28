@@ -35,7 +35,7 @@ object Briefings {
     fun lienClaude(texte: String): String = "https://claude.ai/new?q=" + Uri.encode(texte)
 
     fun recevoir(ctx: Context, b: Message.Briefing) {
-        Prefs.garderBriefing(ctx, b.parole)
+        Prefs.garderBriefing(ctx, b.parole, b.audio)
         b.url?.let { Prefs.garderKanban(ctx, it) }
         afficher(ctx, b)
         KanbanActivity.ouvrir(ctx)
@@ -45,7 +45,7 @@ object Briefings {
             // Réveil annulé ou jamais arrêté : on lit quand même au bout de 20 min.
             ui.postDelayed({ if (Prefs.briefingALire(ctx) && !Prefs.reveilEnCours(ctx)) lireEnAttente(ctx) }, ATTENTE_MAX_MS)
         } else {
-            Lecteur.lire(ctx, b.parole, alerte = true)
+            Lecteur.lire(ctx, b.parole, alerte = true, audio = b.audio)
         }
     }
 
@@ -61,8 +61,11 @@ object Briefings {
 
     private fun lireEnAttente(ctx: Context) {
         Prefs.briefingALire(ctx, false)
-        Lecteur.lire(ctx, Prefs.dernierBriefing(ctx), alerte = true)
+        relire(ctx)
     }
+
+    /** Relit le dernier briefing (voix Piper si elle est encore disponible). */
+    fun relire(ctx: Context) = Lecteur.lire(ctx, Prefs.dernierBriefing(ctx), alerte = true, audio = Prefs.briefingAudio(ctx))
 
     private fun action(ctx: Context, quoi: String, label: String) = Notification.Action.Builder(
         null as Icon?, label,
@@ -149,7 +152,7 @@ class DetailsActivity : android.app.Activity() {
 class BriefingReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         when (intent.action) {
-            Briefings.RELIRE -> Lecteur.lire(ctx, Prefs.dernierBriefing(ctx), alerte = true)
+            Briefings.RELIRE -> Briefings.relire(ctx)
             Briefings.STOP -> Lecteur.stop(ctx)
         }
     }

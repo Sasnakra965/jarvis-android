@@ -72,6 +72,27 @@ object Jarvis {
         return appel("${Prefs.jarvis(ctx)}/api/telephone/evenement", "POST", Prefs.jetonJarvis(ctx), "application/json", corps.size.toLong()) { it.write(corps) }
     }
 
+    /** La voix de Jarvis (Piper) pour un texte : fichier WAV dans le cache, null si Jarvis ou Piper ne répond pas. */
+    fun parole(ctx: Context, texte: String): java.io.File? = runCatching {
+        if (Prefs.jarvis(ctx).isEmpty()) return null
+        val c = URL("${Prefs.jarvis(ctx)}/api/parole").openConnection() as HttpURLConnection
+        try {
+            c.requestMethod = "POST"
+            c.connectTimeout = 10_000
+            c.readTimeout = 30_000
+            c.doOutput = true
+            c.setRequestProperty("Authorization", "Bearer ${Prefs.jetonJarvis(ctx)}")
+            c.setRequestProperty("Content-Type", "application/json")
+            c.outputStream.use { it.write(JSONObject().put("texte", texte).toString().toByteArray()) }
+            if (c.responseCode != 200) return null
+            val f = java.io.File(ctx.cacheDir, "voix-test.wav")
+            c.inputStream.use { entree -> f.outputStream().use { entree.copyTo(it) } }
+            f
+        } finally {
+            c.disconnect()
+        }
+    }.getOrNull()
+
     fun ecrans(ctx: Context): List<String> {
         val r = appel("${Prefs.jarvis(ctx)}/api/ecran", "GET", Prefs.jetonJarvis(ctx))
         val liste = r.getJSONArray("ecrans")

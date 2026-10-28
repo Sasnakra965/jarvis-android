@@ -100,7 +100,13 @@ class MainActivity : Activity() {
             }.start()
         })
         col.addView(bouton("Tester la lecture vocale") {
-            Lecteur.lire(this, "Test de Jarvis. C'est l'heure de partir pour ton rendez-vous à Aubagne, 25 minutes de route.", alerte = true)
+            val texte = "Test de Jarvis. C'est l'heure de partir pour ton rendez-vous à Aubagne, 25 minutes de route."
+            Toast.makeText(this, "Jarvis prépare sa voix…", Toast.LENGTH_SHORT).show()
+            // La voix de Jarvis (Piper) ; si elle ne répond pas, celle d'Android.
+            Thread {
+                val f = Jarvis.parole(this, texte)
+                runOnUiThread { if (f != null) Lecteur.lireFichier(this, f) else Lecteur.lire(this, texte, alerte = true) }
+            }.start()
         })
 
         col.addView(titre("Autorisations"))

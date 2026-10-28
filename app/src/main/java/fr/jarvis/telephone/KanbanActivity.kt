@@ -59,7 +59,7 @@ class KanbanActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(0, (64 * dp).toInt(), 1f)
             setOnClickListener { quoi() }
         }
-        barre.addView(bouton("Relire") { Lecteur.lire(this, Prefs.dernierBriefing(this), alerte = true) })
+        barre.addView(bouton("Relire") { Briefings.relire(this) })
         barre.addView(bouton("Stop") { Lecteur.stop(this) })
         barre.addView(bouton("Fermer") { finish() })
         col.addView(barre)

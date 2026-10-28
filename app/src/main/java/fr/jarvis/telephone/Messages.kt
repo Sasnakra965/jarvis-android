@@ -23,6 +23,8 @@ import javax.crypto.spec.SecretKeySpec
  *    "attendre_reveil":false}
  *        notification lue à voix haute (parole, sinon message) ; attendre_reveil : lire à l'arrêt du réveil
  *
+ *   audio (notif lue, briefing) : adresse d'un WAV de la voix Piper de Jarvis, joué à la place de la synthèse d'Android
+ *
  *   {"type":"message", "id":"12", "destinataire":"Paul" | "0612345678", "texte":"…", "canal":"sms"|"whatsapp", "ack":"https://…"}
  *        SMS (ou WhatsApp) envoyé par le téléphone ; ack reçoit {statut: envoye|echec|choix|pret, detail?, numero?, choix?}
  *
@@ -49,6 +51,8 @@ sealed class Message {
         /** Heure d'envoi (ms) et adresse d'accusé de lecture (mesure du délai, facultatif). */
         val envoye: Long? = null,
         val ack: String? = null,
+        /** Voix Piper de Jarvis (WAV) à jouer à la place de la synthèse d'Android. */
+        val audio: String? = null,
     ) : Message() {
         /** À lire à voix haute : priorité ≥ 4 (haute ou urgente) ou marquée « vocal ». */
         val aLire get() = priorite >= 4 || vocal
@@ -64,6 +68,7 @@ sealed class Message {
         val parole: String,
         val url: String? = null,
         val attendreReveil: Boolean = false,
+        val audio: String? = null,
     ) : Message()
 
     companion object {
@@ -157,6 +162,7 @@ sealed class Message {
                     json.optString("parole").ifEmpty { json.optString("message") },
                     json.optString("url").ifEmpty { null },
                     json.optBoolean("attendre_reveil", false),
+                    lien(json.optString("audio")),
                 )
                 else -> Notif(
                     json.optString("titre").ifEmpty { ev.optString("title").ifEmpty { "Jarvis" } },
@@ -166,9 +172,12 @@ sealed class Message {
                     json.optBoolean("vocal", false) || tagVocal(ev),
                     json.optLong("envoye", 0).takeIf { it > 0 },
                     json.optString("ack").takeIf { it.startsWith("https://") || it.startsWith("http://") },
+                    lien(json.optString("audio")),
                 )
             }
         }
+
+        private fun lien(s: String): String? = s.takeIf { it.startsWith("https://") || it.startsWith("http://") }
 
         /** Prochaine fois qu'il est heure:minute (heure du téléphone) après `apres`. */
         fun prochaine(heure: Int, minute: Int, apres: Long): Long {

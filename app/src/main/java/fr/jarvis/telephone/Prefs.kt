@@ -95,7 +95,10 @@ object Prefs {
 
     // --- Briefing du matin (texte à relire) et réveil en train de sonner ---
 
-    fun garderBriefing(ctx: Context, parole: String) = p(ctx).edit().putString("briefing", parole).apply()
+    fun garderBriefing(ctx: Context, parole: String, audio: String? = null) =
+        p(ctx).edit().putString("briefing", parole).putString("briefing_audio", audio).apply()
+    /** Voix Piper du dernier briefing (valable 24 h chez Jarvis ; sinon la voix d'Android relit). */
+    fun briefingAudio(ctx: Context): String? = p(ctx).getString("briefing_audio", null)
     fun garderKanban(ctx: Context, url: String) = p(ctx).edit().putString("briefing_kanban", url).apply()
     /** Page Kanban du briefing ; à défaut, celle de l'adresse de Jarvis liée. */
     fun kanban(ctx: Context): String = p(ctx).getString("briefing_kanban", null) ?: jarvis(ctx).takeIf { it.isNotEmpty() }?.let { "$it/briefing/kanban" } ?: ""
