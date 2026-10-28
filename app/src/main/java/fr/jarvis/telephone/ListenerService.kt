@@ -57,6 +57,12 @@ class ListenerService : Service() {
             startForeground(Notifs.ID_SERVICE, n)
         }
         getSystemService(ConnectivityManager::class.java).registerDefaultNetworkCallback(reseau)
+        // Batterie (rappel de recharge) : ce signal ne s'écoute que depuis un service en marche.
+        registerReceiver(batterie, android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+    }
+
+    private val batterie = object : android.content.BroadcastReceiver() {
+        override fun onReceive(ctx: Context, intent: Intent) = Recharge.batterie(ctx, intent)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -72,6 +78,7 @@ class ListenerService : Service() {
         connexion?.disconnect()
         fil?.interrupt()
         runCatching { getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(reseau) }
+        runCatching { unregisterReceiver(batterie) }
         changerEtat("Arrêté")
         super.onDestroy()
     }

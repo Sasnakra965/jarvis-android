@@ -66,6 +66,12 @@ object Jarvis {
         appel("${Prefs.jarvis(ctx)}/api/briefing", "POST", Prefs.jetonJarvis(ctx), "application/json", corps.size.toLong()) { it.write(corps) }
     }
 
+    /** Événement du téléphone (réveil réglé, batterie basse) : Jarvis décide du rappel de recharge. Hors du fil principal. */
+    fun evenement(ctx: Context, e: JSONObject): JSONObject {
+        val corps = e.toString().toByteArray()
+        return appel("${Prefs.jarvis(ctx)}/api/telephone/evenement", "POST", Prefs.jetonJarvis(ctx), "application/json", corps.size.toLong()) { it.write(corps) }
+    }
+
     fun ecrans(ctx: Context): List<String> {
         val r = appel("${Prefs.jarvis(ctx)}/api/ecran", "GET", Prefs.jetonJarvis(ctx))
         val liste = r.getJSONArray("ecrans")

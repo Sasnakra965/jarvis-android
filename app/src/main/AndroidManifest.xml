@@ -132,6 +132,15 @@
                 android:resource="@xml/accessibilite" />
         </service>
 
+        <!-- Réveil réglé (n'importe quelle appli d'horloge) : rappel de recharge, décidé par Jarvis. -->
+        <receiver
+            android:name=".ReveilChangeReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.app.action.NEXT_ALARM_CLOCK_CHANGED" />
+            </intent-filter>
+        </receiver>
+
         <!-- Questions à boutons (nouvel expéditeur de mail…) : réponse envoyée à Jarvis. -->
         <receiver
             android:name=".ChoixReceiver"

@@ -101,6 +101,14 @@ object Prefs {
     fun kanban(ctx: Context): String = p(ctx).getString("briefing_kanban", null) ?: jarvis(ctx).takeIf { it.isNotEmpty() }?.let { "$it/briefing/kanban" } ?: ""
     fun dernierBriefing(ctx: Context): String = p(ctx).getString("briefing", "")!!
 
+    /** Rappel de recharge : dernier réveil signalé, seuil de batterie (donné par Jarvis), passage déjà signalé. */
+    fun dernierReveilVu(ctx: Context): Long = p(ctx).getLong("dernier_reveil_vu", 0)
+    fun dernierReveilVu(ctx: Context, t: Long) = p(ctx).edit().putLong("dernier_reveil_vu", t).apply()
+    fun seuilBatterie(ctx: Context): Int = p(ctx).getInt("seuil_batterie", 30)
+    fun seuilBatterie(ctx: Context, s: Int) = p(ctx).edit().putInt("seuil_batterie", s).apply()
+    fun batterieSignalee(ctx: Context): Boolean = p(ctx).getBoolean("batterie_signalee", false)
+    fun batterieSignalee(ctx: Context, oui: Boolean) = p(ctx).edit().putBoolean("batterie_signalee", oui).apply()
+
     /** « Ouvrir dans Claude » : message pré-rempli par le lien (sinon : copié, « Collez et envoyez »). */
     fun bilanParLien(ctx: Context): Boolean = p(ctx).getBoolean("bilan_par_lien", true)
     fun bilanParLien(ctx: Context, oui: Boolean) = p(ctx).edit().putBoolean("bilan_par_lien", oui).apply()
