@@ -59,6 +59,8 @@ class ListenerService : Service() {
         getSystemService(ConnectivityManager::class.java).registerDefaultNetworkCallback(reseau)
         // Batterie (rappel de recharge) : ce signal ne s'écoute que depuis un service en marche.
         registerReceiver(batterie, android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        // Réveil actuel (installation, redémarrage) : Jarvis cale le briefing dessus.
+        Recharge.reveilChange(this)
     }
 
     private val batterie = object : android.content.BroadcastReceiver() {

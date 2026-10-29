@@ -7,7 +7,7 @@ via [ntfy](https://ntfy.sh), sans MacroDroid ni Chrome :
 - notifications immédiates, même écran éteint ;
 - **briefing du matin lu à voix haute** (synthèse vocale d'Android), relu après l'arrêt du réveil ;
 - **SMS et WhatsApp envoyés à la demande de Jarvis** (autorisations SMS et Contacts, service d'accessibilité « Jarvis : envoi WhatsApp ») ;
-- **rappel de recharge au bon moment** : l'appli signale à Jarvis quand un réveil est réglé (toute appli d'horloge) et quand la batterie passe sous le seuil hors charge (`POST /api/telephone/evenement`) ;
+- **briefing calé sur le réveil** et **rappel de recharge au bon moment** : l'appli signale à Jarvis le prochain réveil à chaque changement (toute appli d'horloge, `heure: null` s'il n'y en a plus) et quand la batterie passe sous le seuil hors charge (`POST /api/telephone/evenement`) ;
 - **appels passés à la demande de Jarvis**, après confirmation du nom et du numéro, en Bluetooth si la voiture ou des oreillettes sont connectées (autorisation Téléphone) ;
 - vrais réveils (`AlarmManager.setAlarmClock`) : écran plein avec sonnerie, boutons **Arrêter** et **Snooze 10 min**, annulation à distance ;
 - écran unique : serveur, sujet, autorisations, tests, réveils programmés, historique.
