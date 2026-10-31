@@ -37,6 +37,9 @@ class AlarmActivity : Activity() {
 
         val id = intent.getStringExtra(Alarms.EXTRA_ID) ?: ""
         val libelle = intent.getStringExtra(Alarms.EXTRA_LIBELLE) ?: "Réveil"
+        val musique = intent.getStringExtra(Alarms.EXTRA_MUSIQUE)
+        // Musique pas encore lancée (pas d'autorisation « par-dessus les autres applis ») : l'écran du réveil le peut.
+        if (musique != null) MusiqueReveil.lancer(this)
         val dp = resources.displayMetrics.density
 
         val colonne = LinearLayout(this).apply {
@@ -67,7 +70,7 @@ class AlarmActivity : Activity() {
             Alarms.arreter(this)
             Briefings.apresReveil(this)
         })
-        colonne.addView(bouton("Snooze ${Alarms.SNOOZE_MINUTES} min", "#1565C0") { Alarms.snooze(this, id, libelle) })
+        colonne.addView(bouton("Snooze ${Alarms.SNOOZE_MINUTES} min", "#1565C0") { Alarms.snooze(this, id, libelle, musique) })
         setContentView(colonne)
 
         registerReceiver(fermer, IntentFilter(FERMER), Context.RECEIVER_NOT_EXPORTED)

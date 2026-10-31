@@ -161,7 +161,7 @@ class ListenerService : Service() {
                 if (msg.aLire && Prefs.lectureVocale(this)) lireAlerte(msg)
             }
             is Message.Reveil -> {
-                if (Alarms.programmer(this, msg.id, msg.quand, msg.libelle)) {
+                if (Alarms.programmer(this, msg.id, msg.quand, msg.libelle, msg.musique)) {
                     val quand = Alarms.heure(msg.quand)
                     Notifs.afficher(this, "⏰ Réveil programmé", "$quand · ${msg.libelle}", Message.NORMALE)
                     Prefs.ajouterHistorique(this, "⏰ Réveil programmé : $quand (${msg.libelle})")

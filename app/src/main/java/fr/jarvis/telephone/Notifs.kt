@@ -17,6 +17,7 @@ object Notifs {
     const val CANAL_IMPORTANT = "important"
     const val CANAL_SERVICE = "service"
     const val CANAL_REVEIL = "reveil_sonnerie"
+    const val CANAL_REVEIL_MUSIQUE = "reveil_musique"
 
     const val ID_SERVICE = 1
     const val ID_REVEIL = 2
@@ -50,6 +51,15 @@ object Notifs {
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                         .build(),
                 )
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 800, 600, 800, 600)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            }
+        )
+        // Réveil en musique : pas de son de notification, c'est la musique (ou la sonnerie de secours) qui sonne.
+        nm.createNotificationChannel(
+            NotificationChannel(CANAL_REVEIL_MUSIQUE, "Réveil en musique", NotificationManager.IMPORTANCE_HIGH).apply {
+                setSound(null, null)
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 800, 600, 800, 600)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC

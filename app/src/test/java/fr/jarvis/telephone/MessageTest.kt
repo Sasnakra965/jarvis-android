@@ -106,6 +106,14 @@ class MessageTest {
         assertEquals(Message.Reveil("r1", 1_761_198_600_000, "Chantier"), m)
     }
 
+    @Test fun reveilMusique() {
+        val m = Message.lire(ev("""{"type":"reveil","id":"r1","timestamp":1761198600,"libelle":"Debout","musique":"https://music.youtube.com/watch?v=pqb4m84RsLE"}"""))
+        assertEquals(Message.Reveil("r1", 1_761_198_600_000, "Debout", "https://music.youtube.com/watch?v=pqb4m84RsLE"), m)
+        // Pas un lien https : ignoré, sonnerie habituelle.
+        val sans = Message.lire(ev("""{"type":"reveil","id":"r1","timestamp":1761198600,"musique":"javascript:x"}""")) as Message.Reveil
+        assertEquals(null, sans.musique)
+    }
+
     @Test fun reveilHeureMinute() {
         val envoi = Calendar.getInstance().apply { set(2026, 9, 22, 22, 0, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis
         val m = Message.lire(ev("""{"type":"reveil","heure":7,"minute":30}""", time = envoi / 1000)) as Message.Reveil

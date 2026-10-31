@@ -16,6 +16,8 @@
         android:name="android.permission.SCHEDULE_EXACT_ALARM"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Musique de réveil : ouvrir YouTube Music depuis l'arrière-plan au moment du réveil. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <!-- Messages envoyés à la demande de Jarvis (outil envoyer_message). -->
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
@@ -25,6 +27,7 @@
     <!-- « Plus de détails » du briefing : ouvrir l'appli Claude si elle est installée. -->
     <queries>
         <package android:name="com.anthropic.claude" />
+        <package android:name="com.google.android.apps.youtube.music" />
         <package android:name="com.whatsapp" />
         <package android:name="com.whatsapp.w4b" />
         <intent>

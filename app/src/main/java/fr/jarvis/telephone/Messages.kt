@@ -13,7 +13,7 @@ import javax.crypto.spec.SecretKeySpec
  *   {"type":"notif", "titre":"Jarvis", "message":"…", "priorite":"normale", "url":"https://…"}
  *        priorite : basse | normale | haute | urgente (défaut : normale) ; url facultative (ouverte au toucher)
  *
- *   {"type":"reveil", "id":"r-123", "heure":7, "minute":30, "libelle":"Chantier Dupont", "timestamp":1761198600}
+ *   {"type":"reveil", "id":"r-123", "heure":7, "minute":30, "libelle":"Chantier Dupont", "timestamp":1761198600, "musique"?:"https://music.youtube.com/watch?v=…"}
  *        timestamp (secondes, facultatif) prime sur heure/minute ; sinon prochaine fois qu'il est heure:minute
  *        après l'envoi du message. id facultatif (sert à l'annulation).
  *
@@ -57,7 +57,7 @@ sealed class Message {
         /** À lire à voix haute : priorité ≥ 4 (haute ou urgente) ou marquée « vocal ». */
         val aLire get() = priorite >= 4 || vocal
     }
-    data class Reveil(val id: String, val quand: Long, val libelle: String) : Message()
+    data class Reveil(val id: String, val quand: Long, val libelle: String, val musique: String? = null) : Message()
     data class AnnulerReveil(val id: String?) : Message()
     data class Envoi(val id: String, val destinataire: String, val texte: String, val canal: String, val ack: String) : Message()
     data class Appel(val id: String, val action: String, val destinataire: String, val nom: String?, val numero: String?, val ack: String) : Message()
@@ -117,6 +117,8 @@ sealed class Message {
                         json.optString("id").ifEmpty { "r-$quand" },
                         quand,
                         json.optString("libelle").ifEmpty { "Réveil" },
+                        // Lien de la musique de réveil (YouTube Music), ouvert dans l'appli au moment du réveil.
+                        json.optString("musique").takeIf { it.startsWith("https://") },
                     )
                 }
                 "annuler_reveil" -> AnnulerReveil(json.optString("id").ifEmpty { null })

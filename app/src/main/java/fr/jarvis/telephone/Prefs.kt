@@ -125,21 +125,21 @@ object Prefs {
 
     // --- Réveils programmés (pour les reprogrammer après un redémarrage) ---
 
-    data class ReveilProgramme(val id: String, val quand: Long, val libelle: String)
+    data class ReveilProgramme(val id: String, val quand: Long, val libelle: String, val musique: String? = null)
 
     @Synchronized
     fun reveils(ctx: Context): List<ReveilProgramme> {
         val o = JSONObject(p(ctx).getString("reveils", "{}"))
         return o.keys().asSequence().map { id ->
             val r = o.getJSONObject(id)
-            ReveilProgramme(id, r.getLong("quand"), r.optString("libelle", "Réveil"))
+            ReveilProgramme(id, r.getLong("quand"), r.optString("libelle", "Réveil"), r.optString("musique").ifEmpty { null })
         }.sortedBy { it.quand }.toList()
     }
 
     @Synchronized
     fun garderReveil(ctx: Context, r: ReveilProgramme) {
         val o = JSONObject(p(ctx).getString("reveils", "{}"))
-        o.put(r.id, JSONObject().put("quand", r.quand).put("libelle", r.libelle))
+        o.put(r.id, JSONObject().put("quand", r.quand).put("libelle", r.libelle).apply { r.musique?.let { put("musique", it) } })
         p(ctx).edit().putString("reveils", o.toString()).apply()
     }
 

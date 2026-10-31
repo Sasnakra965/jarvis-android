@@ -238,6 +238,9 @@ class MainActivity : Activity() {
         ligne("envoi WhatsApp automatique (Accessibilité › Jarvis : envoi WhatsApp)", Envois.serviceActif(this)) {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
+        ligne("musique de réveil (Afficher par-dessus les autres applis)", Settings.canDrawOverlays(this)) {
+            startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+        }
         val pleinEcran = Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE || nm.canUseFullScreenIntent()
         ligne("réveil en plein écran", pleinEcran) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
