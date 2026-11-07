@@ -21,6 +21,7 @@ object Notifs {
 
     const val ID_SERVICE = 1
     const val ID_REVEIL = 2
+    private const val ID_REMPLACABLE = 3
     private val prochainId = AtomicInteger(100)
 
     fun nm(ctx: Context): NotificationManager = ctx.getSystemService(NotificationManager::class.java)
@@ -78,7 +79,8 @@ object Notifs {
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 
-    fun afficher(ctx: Context, titre: String, texte: String, priorite: Int, url: String? = null) {
+    /** Avec un id : remplace la notification de même id, sans nouvelle sonnerie. */
+    fun afficher(ctx: Context, titre: String, texte: String, priorite: Int, url: String? = null, id: String? = null) {
         val canal = if (priorite >= 4) CANAL_IMPORTANT else CANAL_MESSAGES
         val n = Notification.Builder(ctx, canal)
             .setSmallIcon(R.drawable.ic_notif)
@@ -87,9 +89,13 @@ object Notifs {
             .setStyle(Notification.BigTextStyle().bigText(texte))
             .setContentIntent(url?.let { lien(ctx, it) } ?: ouvrirAppli(ctx))
             .setAutoCancel(true)
+            .setOnlyAlertOnce(id != null)
             .build()
-        nm(ctx).notify(prochainId.incrementAndGet(), n)
+        if (id != null) nm(ctx).notify(id, ID_REMPLACABLE, n)
+        else nm(ctx).notify(prochainId.incrementAndGet(), n)
     }
+
+    fun annuler(ctx: Context, id: String) = nm(ctx).cancel(id, ID_REMPLACABLE)
 
     /** Notification permanente du service de connexion. */
     fun service(ctx: Context, etat: String): Notification =

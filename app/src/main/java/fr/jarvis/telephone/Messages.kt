@@ -12,6 +12,9 @@ import javax.crypto.spec.SecretKeySpec
  *
  *   {"type":"notif", "titre":"Jarvis", "message":"…", "priorite":"normale", "url":"https://…"}
  *        priorite : basse | normale | haute | urgente (défaut : normale) ; url facultative (ouverte au toucher)
+ *        id facultatif : même id = remplace la notification au même endroit, sans nouvelle sonnerie
+ *
+ *   {"type":"annuler_notif", "id":"leave-123"}   retire cette notification
  *
  *   {"type":"reveil", "id":"r-123", "heure":7, "minute":30, "libelle":"Chantier Dupont", "timestamp":1761198600, "musique"?:"https://music.youtube.com/watch?v=…"}
  *        timestamp (secondes, facultatif) prime sur heure/minute ; sinon prochaine fois qu'il est heure:minute
@@ -53,12 +56,15 @@ sealed class Message {
         val ack: String? = null,
         /** Voix Piper de Jarvis (WAV) à jouer à la place de la synthèse d'Android. */
         val audio: String? = null,
+        /** Même id : remplace la notification déjà affichée. */
+        val id: String? = null,
     ) : Message() {
         /** À lire à voix haute : priorité ≥ 4 (haute ou urgente) ou marquée « vocal ». */
         val aLire get() = priorite >= 4 || vocal
     }
     data class Reveil(val id: String, val quand: Long, val libelle: String, val musique: String? = null) : Message()
     data class AnnulerReveil(val id: String?) : Message()
+    data class AnnulerNotif(val id: String) : Message()
     data class Envoi(val id: String, val destinataire: String, val texte: String, val canal: String, val ack: String) : Message()
     data class Appel(val id: String, val action: String, val destinataire: String, val nom: String?, val numero: String?, val ack: String) : Message()
     data class Choix(val titre: String, val texte: String, val url: String?, val boutons: List<Pair<String, String>>) : Message()
@@ -122,6 +128,7 @@ sealed class Message {
                     )
                 }
                 "annuler_reveil" -> AnnulerReveil(json.optString("id").ifEmpty { null })
+                "annuler_notif" -> AnnulerNotif(json.optString("id"))
                 "message" -> {
                     val ack = json.optString("ack")
                     if (!ack.startsWith("https://") && !ack.startsWith("http://")) return null
@@ -175,6 +182,7 @@ sealed class Message {
                     json.optLong("envoye", 0).takeIf { it > 0 },
                     json.optString("ack").takeIf { it.startsWith("https://") || it.startsWith("http://") },
                     lien(json.optString("audio")),
+                    json.optString("id").ifEmpty { null },
                 )
             }
         }

@@ -61,6 +61,7 @@ class ListenerService : Service() {
         registerReceiver(batterie, android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         // Réveil actuel (installation, redémarrage) : Jarvis cale le briefing dessus.
         Recharge.reveilChange(this)
+        Recharge.signalerAppli(this)
     }
 
     private val batterie = object : android.content.BroadcastReceiver() {
@@ -156,7 +157,7 @@ class ListenerService : Service() {
         if (!Prefs.nouveauMessage(this, ev.optString("id"))) return
         when (msg) {
             is Message.Notif -> {
-                Notifs.afficher(this, msg.titre, msg.texte, msg.priorite, msg.url)
+                Notifs.afficher(this, msg.titre, msg.texte, msg.priorite, msg.url, msg.id)
                 Prefs.ajouterHistorique(this, "🔔 ${msg.titre} : ${msg.texte}")
                 if (msg.aLire && Prefs.lectureVocale(this)) lireAlerte(msg)
             }
@@ -176,6 +177,7 @@ class ListenerService : Service() {
                 Choix.afficher(this, msg)
                 Prefs.ajouterHistorique(this, "❓ ${msg.titre} : ${msg.texte}")
             }
+            is Message.AnnulerNotif -> Notifs.annuler(this, msg.id)
             is Message.AnnulerReveil -> {
                 val n = Alarms.annuler(this, msg.id)
                 val quoi = if (n == 0) "aucun réveil à annuler" else "$n réveil(s) annulé(s)"

@@ -30,6 +30,9 @@ object Recharge {
         }.start()
     }
 
+    /** Dit à Jarvis ce que cette appli sait faire : sans ça, il n'envoie pas de remplacement de notification. */
+    fun signalerAppli(ctx: Context) = signaler(ctx, JSONObject().put("type", "appli").put("remplace_notif", true))
+
     /** Le prochain réveil a changé (0 : plus aucun) : signalé à Jarvis s'il est différent du dernier signalé. */
     fun reveilChange(ctx: Context) {
         val prochain = ctx.getSystemService(AlarmManager::class.java)?.nextAlarmClock?.triggerTime ?: 0L

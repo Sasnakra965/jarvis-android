@@ -22,6 +22,13 @@ class MessageTest {
         assertEquals(Message.Notif("Départ", "Go", 3, "https://waze.com/ul?q=x"), m)
     }
 
+    @Test fun notifRemplacable() {
+        val m = Message.lire(ev("""{"type":"notif","titre":"Départ","message":"Go","id":"leave-1"}""")) as Message.Notif
+        assertEquals("leave-1", m.id)
+        assertNull((Message.lire(ev("""{"type":"notif","titre":"A","message":"B"}""")) as Message.Notif).id)
+        assertEquals(Message.AnnulerNotif("leave-1"), Message.lire(ev("""{"type":"annuler_notif","id":"leave-1"}""")))
+    }
+
     @Test fun briefing() {
         val m = Message.lire(ev("""{"type":"briefing","titre":"☀️ Briefing","message":"☀️ Bonjour boss","parole":"Bonjour boss","url":"https://j/kanban","attendre_reveil":true}"""))
         assertEquals(Message.Briefing("☀️ Briefing", "☀️ Bonjour boss", "Bonjour boss", "https://j/kanban", true), m)
