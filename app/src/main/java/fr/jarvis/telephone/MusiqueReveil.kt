@@ -39,6 +39,10 @@ object MusiqueReveil {
     private var debutSecours = 0L
     private var volumeMusique = -1
     private var volumeAlarme = -1
+    private var arreteeA = 0L
+
+    /** Musique de réveil arrêtée il y a moins de 20 s (le briefing suit : elle ne doit pas repartir après). */
+    fun arreteeRecemment() = arreteeA > 0 && SystemClock.elapsedRealtime() - arreteeA < 20_000
 
     private fun audio(ctx: Context) = ctx.getSystemService(AudioManager::class.java)
 
@@ -124,11 +128,7 @@ object MusiqueReveil {
         })
     }
 
-    private fun pause(ctx: Context) {
-        val a = audio(ctx)
-        a.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PAUSE))
-        a.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PAUSE))
-    }
+    private fun pause(ctx: Context) = toucheMedia(audio(ctx), KeyEvent.KEYCODE_MEDIA_PAUSE)
 
     /** Coupe tout (Arrêter, Snooze, 10 min sans réponse). Sans effet s'il n'y a pas de musique en cours. */
     fun arreter(ctx: Context) {
@@ -138,6 +138,7 @@ object MusiqueReveil {
         secours = null
         val a = audio(app)
         if (lance) {
+            arreteeA = SystemClock.elapsedRealtime()
             pause(app)
             // YouTube Music encore en train de charger : on remet la pause un peu plus tard.
             ui.postDelayed({ pause(app) }, 3_000)

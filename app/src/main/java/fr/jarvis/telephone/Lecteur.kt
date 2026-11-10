@@ -10,6 +10,7 @@ import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.view.KeyEvent
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -22,8 +23,10 @@ import java.util.concurrent.atomic.AtomicInteger
  * sinon la synthèse vocale d'Android (voix française). Écran verrouillé compris, depuis le
  * service de premier plan. Sortie « média » : le système l'envoie aux écouteurs Bluetooth s'ils sont
  * connectés, sinon au haut-parleur ; le mode silencieux ne coupe pas le son média.
- * Alerte (départ, trafic, rappel important) : musique en pause, volume média au maximum le temps de la
- * lecture, puis volume remis comme avant et musique relancée. Briefing : musique seulement baissée.
+ * Alerte (briefing, départ, trafic, rappel important) : musique en pause, volume média au maximum le temps
+ * de la lecture, puis volume remis comme avant et musique relancée. Lecture simple : musique seulement baissée.
+ * La pause passe par le focus audio ; une appli de musique qui l'ignore reçoit la touche « Pause », puis « Lecture »
+ * à la fin (sauf la musique du réveil qu'on vient d'arrêter).
  */
 object Lecteur {
     private var tts: TextToSpeech? = null
@@ -33,6 +36,8 @@ object Lecteur {
     private var focusPause = false
     private val ui = Handler(Looper.getMainLooper())
     private var volumeAvant: Int? = null
+    /** La musique a été mise en pause par la touche « Pause » (focus ignoré) : à relancer à la fin. */
+    private var aRelancer = false
     private val numero = AtomicInteger()
     private val aVenir = AtomicInteger() // alertes programmées pas encore lancées
     /** Actions à lancer quand une lecture commence (accusé de lecture pour mesurer le délai). */
@@ -108,17 +113,43 @@ object Lecteur {
             }
         }.getOrNull() ?: return suivant(ctx, f)
         media = mp
-        // Alerte : 0,2 s pour que la musique se mette en pause, puis volume au maximum (comme la voix d'Android).
-        aVenir.incrementAndGet()
-        ui.postDelayed({
-            aVenir.decrementAndGet()
+        // Alerte : musique en pause d'abord, puis volume au maximum (comme la voix d'Android).
+        apresPause(ctx, am, alerte) {
             if (alerte) {
                 if (volumeAvant == null) volumeAvant = am.getStreamVolume(AudioManager.STREAM_MUSIC)
                 am.setStreamVolume(AudioManager.STREAM_MUSIC, am.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0)
             }
             auDemarrage?.invoke()
             mp.start()
-        }, if (alerte) 200 else 0)
+        }
+    }
+
+    /**
+     * Lance `suite` une fois la musique en pause : 0,2 s pour qu'elle réponde au focus audio ; si elle joue encore,
+     * touche « Pause » et 0,4 s de plus. Sans alerte : tout de suite (la musique est seulement baissée).
+     */
+    private fun apresPause(ctx: Context, am: AudioManager, alerte: Boolean, suite: () -> Unit) {
+        aVenir.incrementAndGet()
+        val lancer = {
+            aVenir.decrementAndGet()
+            suite()
+        }
+        if (!alerte) {
+            ui.post(lancer)
+            return
+        }
+        ui.postDelayed({ if (forcerPause(ctx, am)) ui.postDelayed(lancer, 400) else lancer() }, 200)
+    }
+
+    /** La musique joue encore malgré le focus : touche « Pause ». true si elle a été envoyée. */
+    private fun forcerPause(ctx: Context, am: AudioManager): Boolean {
+        // isMusicActive compte aussi notre propre voix : rien à faire si Jarvis parle déjà.
+        if (aRelancer || !am.isMusicActive || tts?.isSpeaking == true || media?.isPlaying == true) return false
+        toucheMedia(am, KeyEvent.KEYCODE_MEDIA_PAUSE)
+        // La musique du réveil qu'on vient d'arrêter ne doit pas repartir après la lecture.
+        aRelancer = !MusiqueReveil.arreteeRecemment()
+        Prefs.ajouterHistorique(ctx, "⏸️ Musique mise en pause pour la lecture")
+        return true
     }
 
     @Synchronized
@@ -178,15 +209,13 @@ object Lecteur {
             tts?.speak(texte, TextToSpeech.QUEUE_FLUSH, Bundle(), id)
             return
         }
-        // Laisse 0,2 s au lecteur de musique pour se mettre en pause, puis volume au maximum et lecture.
-        aVenir.incrementAndGet()
-        ui.postDelayed({
-            aVenir.decrementAndGet()
+        // Musique en pause d'abord, puis volume au maximum et lecture.
+        apresPause(ctx, am, alerte) {
             val max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
             if (volumeAvant == null) volumeAvant = am.getStreamVolume(AudioManager.STREAM_MUSIC)
             am.setStreamVolume(AudioManager.STREAM_MUSIC, max, 0)
             tts?.speak(texte, TextToSpeech.QUEUE_ADD, Bundle(), id)
-        }, 200)
+        }
     }
 
     /** Fin d'une lecture : rend le volume et la musique quand plus rien n'est en cours. */
@@ -202,10 +231,14 @@ object Lecteur {
         val am = ctx.getSystemService(AudioManager::class.java)
         volumeAvant?.let { am.setStreamVolume(AudioManager.STREAM_MUSIC, it, 0) }
         volumeAvant = null
-        // Rendre le focus relance la musique mise en pause.
+        // Rendre le focus relance la musique mise en pause ; celle mise en pause à la touche repart à la touche.
         focus?.let { am.abandonAudioFocusRequest(it) }
         focus = null
         focusPause = false
+        if (aRelancer) {
+            aRelancer = false
+            ui.postDelayed({ toucheMedia(am, KeyEvent.KEYCODE_MEDIA_PLAY) }, 300)
+        }
     }
 
     @Synchronized
@@ -218,6 +251,12 @@ object Lecteur {
         media = null
         fin(ctx.applicationContext, null)
     }
+}
+
+/** Appui sur une touche média (Pause, Lecture) : reçu par l'appli de musique en cours. */
+fun toucheMedia(am: AudioManager, code: Int) {
+    am.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, code))
+    am.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, code))
 }
 
 /** Texte lisible à voix haute : sans emojis ni symboles décoratifs (hors de Lecteur : testable sans Android). */
